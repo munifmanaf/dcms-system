@@ -108,7 +108,12 @@
                                     <p>Dashboard</p>
                                 </a>
                             </li>
-                            
+                            <li class="nav-item">
+                                <a href="{{ route('dashboard') }}" class="nav-link">
+                                    <i class="nav-icon fas fa-tachometer-alt"></i>
+                                    <p>Dashboard</p>
+                                </a>
+                            </li>
                             <!-- Administration Section - Admin/Manager only -->
                             @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                             <li class="nav-header">ADMINISTRATION</li>
@@ -198,7 +203,36 @@
                                     <p>Add Item</p>
                                 </a>
                             </li>
-
+                            {{-- Or group them under a menu --}}
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="nav-icon fas fa-book"></i>
+                                    <p>
+                                        Repository
+                                        <i class="right fas fa-angle-left"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('repository.index') }}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Homepage</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('repository.browse') }}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Browse All</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('repository.statistics') }}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Statistics</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                             <!-- User Management - Admin only -->
                             @if(auth()->user()->hasAnyRole(['admin', 'manager']))
                             <li class="nav-item">

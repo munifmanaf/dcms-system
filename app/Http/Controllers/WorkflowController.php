@@ -53,6 +53,42 @@ class WorkflowController extends Controller
         return redirect()->back()->with('success', 'Technical review completed.');
     }
 
+    // app/Http/Controllers/WorkflowController.php
+    public function dashboard()
+    {
+        $pendingItems = Item::where('status', 'pending_review')
+                            ->with(['collection', 'submittedBy'])
+                            ->get();
+        
+        $workflowStats = [
+            'pending' => Item::where('status', 'pending_review')->count(),
+            'approved' => Item::where('status', 'approved')->count(),
+            'rejected' => Item::where('status', 'rejected')->count(),
+        ];
+        
+        return view('workflow.dashboard', compact('pendingItems', 'workflowStats'));
+    }
+
+    public function approveItem($id)
+    {
+        $item = Item::find($id);
+        $item->update([
+            'status' => 'approved',
+            'approved_by' => auth()->id(),
+            'approved_at' => now()
+        ]);
+        
+        // Log the approval
+        WorkflowLog::create([
+            'item_id' => $item->id,
+            'user_id' => auth()->id(),
+            'action' => 'approved',
+            'notes' => request('notes')
+        ]);
+        
+        return back()->with('success', 'Item approved successfully');
+    }
+
     /**
      * Content review action
      */

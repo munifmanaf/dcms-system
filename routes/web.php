@@ -3,7 +3,9 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\RepositoryController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\CategoryController;
@@ -28,11 +30,39 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/', function () {
     return view('welcome');
 });
+// routes/web.php
 
+// Public repository routes (accessible without admin auth)
+Route::group(['middleware' => ['web']], function () {
+    Route::get('/repository', [RepositoryController::class, 'index'])->name('repository.index');
+    Route::get('/repository/browse', [RepositoryController::class, 'browse'])->name('repository.browse');
+    Route::get('/repository/statistics', [RepositoryController::class, 'statistics'])->name('repository.statistics');
+    Route::get('/repository/communities/{id}', [RepositoryController::class, 'showCommunity'])->name('repository.community');
+    Route::get('/repository/collections/{id}', [RepositoryController::class, 'showCollection'])->name('repository.collection');
+    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('repository.item');
+});
+
+// Admin repository management (keep your existing auth)
+Route::group(['middleware' => ['auth', 'web'], 'prefix' => 'admin'], function () {
+    Route::get('/repository/settings', [RepositoryController::class, 'settings'])->name('admin.repository.settings');
+    Route::put('/repository/settings', [RepositoryController::class, 'updateSettings'])->name('admin.repository.settings.update');
+});
 // Breeze Authentication Routes
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Add this with your other routes in routes/web.php
+
+// Dashboard Route
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard');
+
+// Optional: Make dashboard the home page
+Route::get('/home', function () {
+    return redirect()->route('dashboard');
+});
+
+// Or if you want dashboard as the default landing for logged-in users:
+Route::get('/', function () {
+    return auth()->check() ? redirect()->route('dashboard') : view('welcome');
+});
 
 Route::middleware('auth')->group(function () {
     // Profile Routes (from Breeze) - KEEP THESE
@@ -103,6 +133,20 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+
+    // routes/web.php
+
+// Public routes
+    Route::get('/repository', [RepositoryController::class, 'index'])->name('repository.index');
+    Route::get('/repository/browse', [RepositoryController::class, 'browse'])->name('repository.browse');
+    Route::get('/repository/statistics', [RepositoryController::class, 'statistics'])->name('repository.statistics');
+    Route::get('/repository/communities/{id}', [RepositoryController::class, 'showCommunity'])->name('repository.community');
+    Route::get('/repository/collections/{id}', [RepositoryController::class, 'showCollection'])->name('repository.collection');
+    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('repository.item');
+
+    // Admin routes
+    Route::get('/admin/repository/settings', [RepositoryController::class, 'settings'])->name('admin.repository.settings');
+    Route::put('/admin/repository/settings', [RepositoryController::class, 'updateSettings'])->name('admin.repository.settings.update');
 
     // System Management Routes - ADMIN ONLY
     // Enhanced system routes

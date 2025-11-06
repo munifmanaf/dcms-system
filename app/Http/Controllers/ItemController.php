@@ -113,28 +113,31 @@ class ItemController extends Controller
             $storedMimeType = \Storage::disk('public')->mimeType($filePath);
 
             // Build metadata
-            $metadata = [];
-            if ($request->filled('metadata.author')) {
-                $metadata['author'] = $request->metadata['author'];
-            }
-            if ($request->filled('metadata.year')) {
-                $metadata['year'] = $request->metadata['year'];
-            }
-            if ($request->filled('metadata.language')) {
-                $metadata['language'] = $request->metadata['language'];
-            }
-            if ($request->filled('metadata.pages')) {
-                $metadata['pages'] = $request->metadata['pages'];
-            }
+            // $metadata = [];
+            // if ($request->filled('metadata.author')) {
+            //     $metadata['author'] = $request->metadata['author'];
+            // }
+            // if ($request->filled('metadata.year')) {
+            //     $metadata['year'] = $request->metadata['year'];
+            // }
+            // if ($request->filled('metadata.language')) {
+            //     $metadata['language'] = $request->metadata['language'];
+            // }
+            // if ($request->filled('metadata.pages')) {
+            //     $metadata['pages'] = $request->metadata['pages'];
+            // }
             
-            if ($request->has('metadata_keys')) {
-                foreach ($request->metadata_keys as $index => $key) {
-                    $value = $request->metadata_values[$index] ?? '';
-                    if (!empty(trim($key)) && !empty(trim($value))) {
-                        $metadata[trim($key)] = trim($value);
-                    }
-                }
-            }
+            // if ($request->has('metadata_keys')) {
+            //     foreach ($request->metadata_keys as $index => $key) {
+            //         $value = $request->metadata_values[$index] ?? '';
+            //         if (!empty(trim($key)) && !empty(trim($value))) {
+            //             $metadata[trim($key)] = trim($value);
+            //         }
+            //     }
+            // }
+
+            // When saving items, structure metadata like DSpace:
+
 
             // Create item
             $item = Item::create([
@@ -142,13 +145,26 @@ class ItemController extends Controller
                 'description' => $request->description,
                 'collection_id' => $request->collection_id,
                 'is_published' => $request->boolean('is_published', false),
-                'metadata' => $metadata,
+                // 'metadata' => $metadata,
                 'user_id' => auth()->id(),
                 'file_path' => $filePath,
                 'file_name' => $originalName,
                 'file_size' => $storedFileSize,
                 'file_type' => $storedMimeType ?: $file->getClientMimeType(),
             ]);
+
+            $metadata = [
+                'dc_title' => [$request->title],
+                'dc_creator' => is_array($request->creators) ? $request->creators : [],
+                'dc_subject' => is_array($request->subjects) ? $request->subjects : [],
+                'dc_description' => [$request->description],
+                'dc_date_issued' => [$request->date_issued],
+                'dc_type' => [$request->type],
+                'dc_identifier' => ['item-' . $item->id],
+            ];
+
+            $item->metadata = $metadata;
+            $item->save();
 
             if ($request->has('categories')) {
                 $item->categories()->sync($request->categories);

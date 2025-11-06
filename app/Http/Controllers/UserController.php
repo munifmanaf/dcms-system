@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -89,9 +90,20 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 
+    // app/Http/Controllers/UserController.php
     public function profile()
     {
-        return view('users.profile', ['user' => auth()->user()]);
+        $user = auth()->user();
+        $userItems = Item::where('created_by', $user->id)->count();
+        // $userDownloads = DownloadLog::where('user_id', $user->id)->count();
+        
+        return view('users.profile', compact('user', 'userItems', 'userDownloads'));
+    }
+
+    public function myItems()
+    {
+        $items = Item::where('created_by', auth()->id())->with('collection.community')->paginate(10);
+        return view('users.my-items', compact('items'));
     }
 
     public function updateProfile(Request $request)

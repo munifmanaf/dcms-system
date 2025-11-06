@@ -55,4 +55,10 @@ class Community extends Model
     {
         return 'slug';
     }
+
+    // app/Models/Community.php
+    public function repository()
+    {
+        return $this->belongsTo(Repository::class);
+    }
 }

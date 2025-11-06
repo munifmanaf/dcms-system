@@ -1,359 +1,217 @@
 <?php
-
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\Community;
 use App\Models\Collection;
 use App\Models\Item;
-use App\Models\Category;
-use App\Models\Bitstream;
-use App\Models\BitstreamFormat;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class SampleDataSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // Create users if they don't exist
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@dcms.test'],
-            [
-                'name' => 'Admin User',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'email_verified_at' => now(),
-            ]
-        );
+        // Clear existing data
+        DB::table('items')->delete();
+        DB::table('collections')->delete();
+        DB::table('communities')->delete();
 
-        $manager = User::firstOrCreate(
-            ['email' => 'manager@dcms.test'],
-            [
-                'name' => 'Content Manager', 
-                'password' => Hash::make('password'),
-                'role' => 'manager',
-                'email_verified_at' => now(),
-            ]
-        );
+        // Create Communities
+        $engineering = Community::create([
+            'name' => 'Faculty of Engineering',
+            'description' => 'Research outputs from Engineering Faculty'
+        ]);
 
-        $user = User::firstOrCreate(
-            ['email' => 'user@dcms.test'],
-            [
-                'name' => 'Regular User',
-                'password' => Hash::make('password'), 
-                'role' => 'user',
-                'email_verified_at' => now(),
-            ]
-        );
+        $science = Community::create([
+            'name' => 'Faculty of Science', 
+            'description' => 'Scientific research and publications'
+        ]);
 
-        $reviewer = User::firstOrCreate(
-            ['email' => 'reviewer@dcms.test'],
-            [
-                'name' => 'Reviewer User',
-                'password' => Hash::make('password'),
-                'role' => 'reviewer', 
-                'email_verified_at' => now(),
-            ]
-        );
+        $arts = Community::create([
+            'name' => 'Faculty of Arts & Humanities',
+            'description' => 'Arts, literature and humanities research'
+        ]);
 
-        // Create categories
-        $categories = [
-            ['name' => 'Research Papers', 'description' => 'Academic research papers and publications'],
-            ['name' => 'Technical Reports', 'description' => 'Technical documentation and reports'],
-            ['name' => 'Meeting Minutes', 'description' => 'Records of meetings and discussions'],
-            ['name' => 'Policies', 'description' => 'Organizational policies and procedures'],
-            ['name' => 'Templates', 'description' => 'Document templates and forms'],
-        ];
+        // Create Collections
+        $mastersTheses = Collection::create([
+            'name' => 'Masters Theses',
+            'description' => 'Masters degree theses and dissertations',
+            'community_id' => $engineering->id
+        ]);
 
-        foreach ($categories as $category) {
-            Category::firstOrCreate(
-                ['name' => $category['name']],
-                $category
-            );
-        }
+        $researchPapers = Collection::create([
+            'name' => 'Research Papers',
+            'description' => 'Published research papers and articles',
+            'community_id' => $engineering->id
+        ]);
 
-        // Create communities
-        $researchCommunity = Community::firstOrCreate(
-            ['name' => 'Research Publications'],
-            [
-                'description' => 'Academic and research publications',
-                'is_public' => true,
-            ]
-        );
+        $journalArticles = Collection::create([
+            'name' => 'Journal Articles',
+            'description' => 'Peer-reviewed journal articles',
+            'community_id' => $science->id
+        ]);
 
-        $hrCommunity = Community::firstOrCreate(
-            ['name' => 'Human Resources'],
-            [
-                'description' => 'HR documents and policies', 
-                'is_public' => true,
-            ]
-        );
+        $literaryWorks = Collection::create([
+            'name' => 'Literary Works',
+            'description' => 'Creative writing and literary analysis',
+            'community_id' => $arts->id
+        ]);
 
-        $techCommunity = Community::firstOrCreate(
-            ['name' => 'Technical Documentation'],
+        // Create Sample Items
+        $items = [
             [
-                'description' => 'Technical guides and documentation',
-                'is_public' => true,
-            ]
-        );
-
-        // Create collections within communities
-        $journalCollection = Collection::firstOrCreate(
-            ['name' => 'Journal Articles'],
-            [
-                'community_id' => $researchCommunity->id,
-                'description' => 'Peer-reviewed journal articles',
-                'is_public' => true,
-            ]
-        );
-
-        $conferenceCollection = Collection::firstOrCreate(
-            ['name' => 'Conference Papers'],
-            [
-                'community_id' => $researchCommunity->id,
-                'description' => 'Conference proceedings and papers',
-                'is_public' => true,
-            ]
-        );
-
-        $policyCollection = Collection::firstOrCreate(
-            ['name' => 'Company Policies'],
-            [
-                'community_id' => $hrCommunity->id,
-                'description' => 'Official company policies and guidelines',
-                'is_public' => false, // Internal only
-            ]
-        );
-
-        $manualCollection = Collection::firstOrCreate(
-            ['name' => 'Technical Manuals'],
-            [
-                'community_id' => $techCommunity->id,
-                'description' => 'Technical manuals and guides',
-                'is_public' => true,
-            ]
-        );
-
-        
-        // Create sample items with different workflow states
-        $sampleItems = [
-            // Draft items
-            [
-                'title' => 'Machine Learning Approaches for Document Classification',
-                'content' => 'This research paper explores various machine learning techniques for automatic document classification in digital repositories.',
-                'user_id' => $user->id,
-                'collection_id' => $journalCollection->id,
-                'workflow_state' => 'draft',
-                'version_notes' => 'Initial draft version',
-            ],
-            [
-                'title' => 'Quarterly Performance Review Process',
-                'content' => 'Detailed guidelines for conducting quarterly performance reviews across all departments.',
-                'user_id' => $manager->id, 
-                'collection_id' => $policyCollection->id,
-                'workflow_state' => 'draft',
-                'version_notes' => 'Draft for internal review',
-            ],
-
-            // Submitted items
-            [
-                'title' => 'Digital Preservation Strategies for Institutional Repositories',
-                'content' => 'Analysis of digital preservation strategies and their implementation in institutional repository systems.',
-                'user_id' => $user->id,
-                'collection_id' => $conferenceCollection->id,
-                'workflow_state' => 'submitted',
-                'submitted_at' => now()->subDays(2),
-                'version_notes' => 'Submitted for technical review',
-            ],
-            [
-                'title' => 'API Documentation for DCMS System',
-                'content' => 'Complete API documentation for the Document Content Management System REST endpoints.',
-                'user_id' => $manager->id,
-                'collection_id' => $manualCollection->id, 
-                'workflow_state' => 'submitted',
-                'submitted_at' => now()->subDay(),
-                'version_notes' => 'Ready for content review',
-            ],
-
-            // Under review items
-            [
-                'title' => 'Impact of Open Access on Research Visibility',
-                'content' => 'Study examining how open access publishing affects research citation rates and visibility.',
-                'user_id' => $user->id,
-                'collection_id' => $journalCollection->id,
-                'workflow_state' => 'under_review',
-                'submitted_at' => now()->subDays(5),
-                'version_notes' => 'Undergoing peer review',
-            ],
-
-            // Published items
-            [
-                'title' => 'DCMS User Guide and Manual',
-                'content' => 'Complete user guide for the Document Content Management System, covering all features and functionality.',
-                'user_id' => $admin->id,
-                'collection_id' => $manualCollection->id,
-                'workflow_state' => 'published', 
-                'submitted_at' => now()->subDays(10),
-                'published_at' => now()->subDays(7),
-                'view_count' => 45,
-                'download_count' => 23,
-                'version_notes' => 'First published version',
-            ],
-            [
-                'title' => 'Employee Code of Conduct',
-                'content' => 'Official code of conduct policy for all employees, covering professional behavior and ethics.',
-                'user_id' => $manager->id,
-                'collection_id' => $policyCollection->id,
+                'title' => 'Renewable Energy Solutions for Urban Areas',
+                'description' => 'A comprehensive study of renewable energy integration in modern urban environments focusing on solar and wind power applications.',
+                'user_id' => 1,
+                'collection_id' => $mastersTheses->id,
+                'metadata' => json_encode([
+                    'dc_title' => ['Renewable Energy Solutions for Urban Areas'],
+                    'dc_creator' => ['John Smith', 'Dr. Sarah Chen'],
+                    'dc_subject' => ['Renewable Energy', 'Urban Planning', 'Sustainability'],
+                    'dc_description' => ['A comprehensive study of renewable energy integration in modern urban environments.'],
+                    'dc_date_issued' => ['2024-06-15'],
+                    'dc_type' => ['Thesis'],
+                    'dc_publisher' => ['University Repository'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['ETD-2024-001']
+                ]),
                 'workflow_state' => 'published',
-                'submitted_at' => now()->subDays(15),
-                'published_at' => now()->subDays(12),
-                'view_count' => 89,
-                'download_count' => 67,
-                'version_notes' => 'Approved by legal department',
-            ],
-        ];
-
-        foreach ($sampleItems as $itemData) {
-            $item = Item::firstOrCreate(
-                ['title' => $itemData['title']],
-                $itemData
-            );
-
-            // Assign random categories to items
-            $randomCategories = Category::inRandomOrder()->limit(rand(1, 3))->get();
-            $item->categories()->sync($randomCategories);
-        }
-
-        // Create some sample workflow actions for submitted items
-        $submittedItems = Item::where('workflow_state', 'submitted')->get();
-        $submitStep = \App\Models\WorkflowStep::where('action', 'submit')->first();
-
-        foreach ($submittedItems as $item) {
-            \App\Models\WorkflowAction::firstOrCreate(
-                [
-                    'item_id' => $item->id,
-                    'action' => 'submit'
-                ],
-                [
-                    'user_id' => $item->user_id,
-                    'workflow_step_id' => $submitStep->id,
-                    'comments' => 'Submitted for review process',
-                    'status' => 'approved',
-                    'metadata' => ['submitted_at' => $item->submitted_at->toISOString()],
-                    'created_at' => $item->submitted_at,
-                ]
-            );
-        }
-
-        // ... existing code ...
-
-        // Create sample bitstream formats if they don't exist
-        $formats = [
-            [
-                'mimetype' => 'application/pdf',
-                'short_description' => 'Adobe PDF',
-                'description' => 'Portable Document Format',
-                'support_level' => 'SUPPORTED',
-                'extensions' => 'pdf'
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
-                'mimetype' => 'application/msword',
-                'short_description' => 'Microsoft Word',
-                'description' => 'Microsoft Word Document', 
-                'support_level' => 'SUPPORTED',
-                'extensions' => 'doc,docx'
+                'title' => 'Machine Learning Applications in Structural Engineering',
+                'description' => 'Exploring AI and ML techniques for structural analysis and design optimization in civil engineering projects.',
+                'user_id' => 2,
+                'collection_id' => $researchPapers->id,
+                'metadata' => json_encode([
+                    'dc_title' => ['Machine Learning Applications in Structural Engineering'],
+                    'dc_creator' => ['Dr. Michael Brown', 'Emily Johnson'],
+                    'dc_subject' => ['Machine Learning', 'Structural Engineering', 'Artificial Intelligence'],
+                    'dc_description' => ['Exploring AI and ML techniques for structural analysis and design optimization.'],
+                    'dc_date_issued' => ['2024-05-20'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_publisher' => ['Engineering Research Center'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['RP-2024-002']
+                ]),
+                'workflow_state' => 'published',
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
-                'mimetype' => 'text/plain', 
-                'short_description' => 'Plain Text',
-                'description' => 'Plain Text File',
-                'support_level' => 'SUPPORTED',
-                'extensions' => 'txt'
+                'title' => 'Advanced Materials for Sustainable Construction',
+                'description' => 'Research on novel construction materials with reduced environmental impact and enhanced durability.',
+                'collection_id' => $researchPapers->id,
+                'user_id' => 3,
+                'metadata' => json_encode([
+                    'dc_title' => ['Advanced Materials for Sustainable Construction'],
+                    'dc_creator' => ['Prof. Robert Wilson', 'Lisa Zhang'],
+                    'dc_subject' => ['Materials Science', 'Sustainable Construction', 'Green Building'],
+                    'dc_description' => ['Research on novel construction materials with reduced environmental impact.'],
+                    'dc_date_issued' => ['2024-04-10'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_publisher' => ['Materials Research Journal'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['RP-2024-003']
+                ]),
+                'workflow_state' => 'published',
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
-                'mimetype' => 'image/jpeg',
-                'short_description' => 'JPEG Image',
-                'description' => 'JPEG Image File',
-                'support_level' => 'SUPPORTED', 
-                'extensions' => 'jpg,jpeg'
+                'title' => 'Quantum Computing Applications in Chemistry',
+                'description' => 'Applications of quantum computing in molecular modeling and chemical simulations for drug discovery.',
+                'collection_id' => $journalArticles->id,
+                'user_id' => 5,
+                'metadata' => json_encode([
+                    'dc_title' => ['Quantum Computing Applications in Chemistry'],
+                    'dc_creator' => ['Dr. Amanda Lee', 'David Kim'],
+                    'dc_subject' => ['Quantum Computing', 'Computational Chemistry', 'Quantum Algorithms'],
+                    'dc_description' => ['Applications of quantum computing in molecular modeling and chemical simulations.'],
+                    'dc_date_issued' => ['2024-03-22'],
+                    'dc_type' => ['Journal Article'],
+                    'dc_publisher' => ['Journal of Computational Chemistry'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['JA-2024-004']
+                ]),
+                'workflow_state' => 'published',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'title' => 'Modernist Poetry in the Digital Age',
+                'description' => 'Analysis of modernist poetry adaptations and interpretations in contemporary digital media.',
+                'collection_id' => $literaryWorks->id,
+                'user_id' => 5,
+                'metadata' => json_encode([
+                    'dc_title' => ['Modernist Poetry in the Digital Age'],
+                    'dc_creator' => ['Dr. Elizabeth Wong'],
+                    'dc_subject' => ['Modernist Poetry', 'Digital Humanities', 'Literary Analysis'],
+                    'dc_description' => ['Analysis of modernist poetry adaptations in contemporary digital media.'],
+                    'dc_date_issued' => ['2024-02-28'],
+                    'dc_type' => ['Literary Analysis'],
+                    'dc_publisher' => ['Arts Review Journal'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['LW-2024-005']
+                ]),
+                'workflow_state' => 'published',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'title' => 'Climate Change Impact on Coastal Infrastructure',
+                'description' => 'Analysis of sea-level rise effects on coastal structures and adaptation strategies for climate resilience.',
+                'collection_id' => $mastersTheses->id,
+                'user_id' => 5,
+                'metadata' => json_encode([
+                    'dc_title' => ['Climate Change Impact on Coastal Infrastructure'],
+                    'dc_creator' => ['Maria Garcia'],
+                    'dc_subject' => ['Climate Change', 'Coastal Engineering', 'Infrastructure'],
+                    'dc_description' => ['Analysis of sea-level rise effects on coastal structures and adaptation strategies.'],
+                    'dc_date_issued' => ['2024-02-18'],
+                    'dc_type' => ['Thesis'],
+                    'dc_publisher' => ['University Repository'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['ETD-2024-006']
+                ]),
+                'workflow_state' => 'draft',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'title' => 'Artificial Intelligence in Creative Writing',
+                'description' => 'Exploring the role of AI tools in assisting and enhancing creative writing processes.',
+                'collection_id' => $literaryWorks->id,
+                'user_id' => 4,
+                'metadata' => json_encode([
+                    'dc_title' => ['Artificial Intelligence in Creative Writing'],
+                    'dc_creator' => ['Thomas Reed'],
+                    'dc_subject' => ['Artificial Intelligence', 'Creative Writing', 'Digital Literature'],
+                    'dc_description' => ['Exploring the role of AI tools in assisting creative writing processes.'],
+                    'dc_date_issued' => ['2024-01-15'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_publisher' => ['Digital Humanities Quarterly'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['LW-2024-007']
+                ]),
+                'workflow_state' => 'pending_review',
+                'created_at' => now(),
+                'updated_at' => now()
             ]
         ];
 
-        foreach ($formats as $format) {
-            BitstreamFormat::firstOrCreate(
-                ['mimetype' => $format['mimetype']],
-                $format
-            );
+        foreach ($items as $itemData) {
+            Item::create($itemData);
         }
 
-        // Create sample bitstreams for items
-        $items = Item::all();
-        $pdfFormat = BitstreamFormat::where('mimetype', 'application/pdf')->first();
-        $docFormat = BitstreamFormat::where('mimetype', 'application/msword')->first();
-        $textFormat = BitstreamFormat::where('mimetype', 'text/plain')->first();
-
-        foreach ($items as $item) {
-            // Create 1-3 random bitstreams for each item
-            $bitstreamCount = rand(1, 3);
-            
-            for ($i = 0; $i < $bitstreamCount; $i++) {
-                $fileTypes = [
-                    ['name' => 'research_paper.pdf', 'format' => $pdfFormat, 'size' => 2048000],
-                    ['name' => 'technical_report.docx', 'format' => $docFormat, 'size' => 1536000],
-                    ['name' => 'readme.txt', 'format' => $textFormat, 'size' => 10240],
-                    ['name' => 'methodology.pdf', 'format' => $pdfFormat, 'size' => 3072000],
-                    ['name' => 'data_analysis.docx', 'format' => $docFormat, 'size' => 2560000],
-                ];
-                
-                $fileType = $fileTypes[array_rand($fileTypes)];
-                $extension = pathinfo($fileType['name'], PATHINFO_EXTENSION);
-                
-                Bitstream::firstOrCreate(
-                    [
-                        'item_id' => $item->id,
-                        'name' => $fileType['name']
-                    ],
-                    [
-                        'name' => $fileType['name'],
-                        'original_filename' => $fileType['name'],
-                        'internal_id' => 'sample_' . Str::random(20),
-                        'mime_type' => $fileType['format']->mimetype,
-                        'file_extension' => $extension,
-                        'size_bytes' => $fileType['size'],
-                        'checksum' => md5($item->id . $fileType['name'] . time()),
-                        'checksum_algorithm' => 'MD5',
-                        'sequence_id' => $i,
-                        'bitstream_format_id' => $fileType['format']->id,
-                        'bundle_name' => 'ORIGINAL',
-                        'description' => 'Sample file for ' . $item->title,
-                        'is_current' => true,
-                        'file_version' => 1,
-                        'technical_metadata' => [
-                            'sample_data' => true,
-                            'generated_at' => now()->toISOString(),
-                            'file_type' => $extension,
-                        ]
-                    ]
-                );
-            }
-        }
-
-        // ... rest of existing code (workflow actions) ...
-
-        $this->command->info('Sample data created successfully!');
-        $this->command->info('Users:');
-        $this->command->info('- Admin: admin@dcms.test / password');
-        $this->command->info('- Manager: manager@dcms.test / password'); 
-        $this->command->info('- User: user@dcms.test / password');
-        $this->command->info('- Reviewer: reviewer@dcms.test / password');
-        $this->command->info('');
-        $this->command->info('Items created with different workflow states:');
-        $this->command->info('- 2 draft items (can test submission)');
-        $this->command->info('- 2 submitted items (awaiting review)');
-        $this->command->info('- 1 under review item');
-        $this->command->info('- 2 published items');
+        $this->command->info('Demo data seeded successfully!');
+        $this->command->info('Communities created: ' . Community::count());
+        $this->command->info('Collections created: ' . Collection::count());
+        $this->command->info('Items created: ' . Item::count());
+        $this->command->info('---');
+        $this->command->info('Published items: ' . Item::where('workflow_state', 'published')->count());
+        $this->command->info('Draft items: ' . Item::where('workflow_state', 'draft')->count());
+        $this->command->info('Pending review: ' . Item::where('workflow_state', 'pending_review')->count());
     }
 }

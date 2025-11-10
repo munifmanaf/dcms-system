@@ -70,8 +70,9 @@ class RepositoryController extends Controller
         
         $items = $query->orderBy('created_at', 'desc')->paginate(20);
         $communities = Community::with('collections')->get();
+        $collections = Collection::all();
 
-        return view('repository.browse', compact('repository', 'items', 'communities'));
+        return view('repository.browse', compact('repository', 'items', 'communities', 'collections'));
     }
 
     /**
@@ -140,7 +141,7 @@ class RepositoryController extends Controller
      */
     public function updateSettings(Request $request)
     {
-        $repository = Repository::getActive();
+        $repository = Repository::first();
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -162,23 +163,107 @@ class RepositoryController extends Controller
                          ->with('success', 'Repository settings updated successfully.');
     }
 
-    // app/Http/Controllers/RepositoryController.php
     public function statistics()
     {
-        $repository = Repository::getActive();
+        $repository = Repository::first();
         
+        // Get real data from database
+        $itemsByState = [
+            'published' => Item::where('workflow_state', 'published')->count(),
+            'draft' => Item::where('workflow_state', 'draft')->count(),
+            'pending_review' => Item::where('workflow_state', 'pending_review')->count(),
+        ];
+
+        // Get file types from actual metadata
+        $fileTypes = $this->getFileTypesFromMetadata();
+        
+        // Get monthly growth from actual created_at dates
+        $monthlyGrowth = $this->getMonthlyGrowth();
+        
+        // Get top collections with real counts
+        $topCollections = Collection::withCount(['items' => function($query) {
+            $query->where('workflow_state', 'published');
+        }])
+        ->orderBy('items_count', 'desc')
+        ->limit(5)
+        ->get();
+
         $stats = [
-            'total_items' => $repository->items()->where('status', 'published')->count(),
-            'total_communities' => $repository->communities()->count(),
-            'total_collections' => $repository->collections()->count(),
-            'top_collections' => Collection::withCount('items')
-                ->orderBy('items_count', 'desc')
+            'total_items' => Item::count(),
+            'total_communities' => Community::count(),
+            'total_collections' => Collection::count(),
+            'published_items' => $itemsByState['published'],
+            'items_by_state' => $itemsByState,
+            'file_types' => $fileTypes,
+            'monthly_growth' => $monthlyGrowth,
+            'top_collections' => $topCollections,
+            'recent_items' => Item::where('workflow_state', 'published')
+                ->with('collection.community')
+                ->orderBy('created_at', 'desc')
                 ->limit(5)
-                ->get(),
-            'monthly_growth' => $this->getMonthlyGrowth(),
-            'file_types' => $this->getFileTypeDistribution()
+                ->get()
         ];
 
         return view('repository.statistics', compact('repository', 'stats'));
+    }
+
+    private function getFileTypesFromMetadata()
+    {
+        $fileTypes = [
+            'PDF' => 0,
+            'Word Document' => 0,
+            'Image' => 0,
+            'Dataset' => 0,
+            'Video' => 0,
+            'Other' => 0
+        ];
+
+        // Now we can use the file_type column directly
+        $items = Item::where('workflow_state', 'published')->get();
+        
+        foreach ($items as $item) {
+            $fileType = $item->file_type ?? 'Other';
+            
+            if (array_key_exists($fileType, $fileTypes)) {
+                $fileTypes[$fileType]++;
+            } else {
+                $fileTypes['Other']++;
+            }
+        }
+
+        // Convert to percentages
+        $total = array_sum($fileTypes);
+        if ($total > 0) {
+            foreach ($fileTypes as $type => $count) {
+                $fileTypes[$type] = round(($count / $total) * 100);
+            }
+        }
+
+        return $fileTypes;
+    }
+
+    private function getMonthlyGrowth()
+    {
+        $monthlyData = Item::where('workflow_state', 'published')
+            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+            ->groupBy('year', 'month')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        $monthlyGrowth = [
+            'Jan' => 0, 'Feb' => 0, 'Mar' => 0, 'Apr' => 0,
+            'May' => 0, 'Jun' => 0, 'Jul' => 0, 'Aug' => 0,
+            'Sep' => 0, 'Oct' => 0, 'Nov' => 0, 'Dec' => 0
+        ];
+
+        $cumulative = 0;
+        foreach ($monthlyData as $data) {
+            $monthName = date('M', mktime(0, 0, 0, $data->month, 1));
+            $cumulative += $data->count;
+            $monthlyGrowth[$monthName] = $cumulative;
+        }
+
+        return $monthlyGrowth;
     }
 }

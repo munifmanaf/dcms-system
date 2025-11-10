@@ -3,27 +3,27 @@
 @endphp
 
 @if($fileType)
-    @if(str_contains($fileType, 'image'))
+    @if(str_contains($fileType, 'Image'))
     <span class="badge badge-info badge-sm">
         <i class="fas fa-image mr-1"></i>Image
     </span>
-    @elseif(str_contains($fileType, 'pdf'))
+    @elseif(str_contains($fileType, 'PDF'))
     <span class="badge badge-danger badge-sm">
         <i class="fas fa-file-pdf mr-1"></i>PDF
     </span>
-    @elseif(str_contains($fileType, 'word') || str_contains($fileType, 'document'))
+    @elseif(str_contains($fileType, 'Word Document') || str_contains($fileType, 'document'))
     <span class="badge badge-primary badge-sm">
         <i class="fas fa-file-word mr-1"></i>Document
     </span>
-    @elseif(str_contains($fileType, 'excel') || str_contains($fileType, 'spreadsheet'))
+    @elseif(str_contains($fileType, 'Dataset') || str_contains($fileType, 'spreadsheet'))
     <span class="badge badge-success badge-sm">
         <i class="fas fa-file-excel mr-1"></i>Spreadsheet
     </span>
-    @elseif(str_contains($fileType, 'video'))
+    @elseif(str_contains($fileType, 'Video'))
     <span class="badge badge-warning badge-sm">
         <i class="fas fa-file-video mr-1"></i>Video
     </span>
-    @elseif(str_contains($fileType, 'audio'))
+    @elseif(str_contains($fileType, 'Audio'))
     <span class="badge badge-secondary badge-sm">
         <i class="fas fa-file-audio mr-1"></i>Audio
     </span>

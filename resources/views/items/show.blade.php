@@ -1,380 +1,256 @@
 @extends('layouts.app')
 
-@section('page_title', $item->title)
-@section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('items.index') }}">Items</a></li>
-    <li class="breadcrumb-item active">{{ $item->title }}</li>
-@endsection
+@section('title', $item->title)
 
 @section('content')
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-8">
-            <!-- Item Details Card -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-file-alt mr-2"></i>
-                        {{ $item->title }}
-                    </h3>
+                    <h3 class="card-title">{{ $item->title }}</h3>
                     <div class="card-tools">
-                        <span class="badge badge-{{ $item->is_published ? 'success' : 'warning' }}">
-                            {{ $item->is_published ? 'Published' : 'Draft' }}
-                        </span>
-                        @if($item->workflow_state)
-                        <span class="badge badge-primary ml-1">
+                        <span class="badge bg-{{ $item->workflow_state == 'published' ? 'success' : ($item->workflow_state == 'draft' ? 'secondary' : 'warning') }}">
                             {{ ucfirst($item->workflow_state) }}
                         </span>
-                        @endif
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- File Information -->
-                    @if($item->file_path)
-                    <div class="file-section mb-4">
-                        <h5><i class="fas fa-file"></i> File Information</h5>
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                            <div>
-                                <h6 class="mb-1">{{ $item->file_name }}</h6>
-                                <small class="text-muted">
-                                    {{ $item->file_type ?? 'Unknown type' }} • 
-                                    @if($item->file_size)
-                                        {{ number_format($item->file_size / 1024, 2) }} KB • 
-                                    @endif
-                                    Uploaded {{ $item->created_at->format('M j, Y') }}
-                                </small>
-                            </div>
-                            <div class="btn-group">
-                                <a href="{{ route('items.download', $item) }}" class="btn btn-primary">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                                @if($item->file_path && (str_contains($item->file_type ?? '', 'image') || str_contains($item->file_type ?? '', 'pdf')))
-                                <a href="{{ Storage::disk('public')->url($item->file_path) }}" 
-                                   target="_blank" class="btn btn-info">
-                                    <i class="fas fa-eye"></i> Preview
-                                </a>
-                                @endif
-                            </div>
+                    <!-- File Type and Basic Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            @if($item->file_type)
+                            <p>
+                                <strong>File Type:</strong>
+                                <span class="badge bg-info">{{ $item->file_type }}</span>
+                            </p>
+                            @endif
+                            <p>
+                                <strong>Collection:</strong>
+                                <span class="badge bg-light text-dark">{{ $item->collection->name }}</span>
+                            </p>
+                            <p>
+                                <strong>Community:</strong>
+                                <span class="badge bg-light text-dark">{{ $item->collection->community->name }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>
+                                <strong>Created:</strong>
+                                {{ $item->created_at->format('M d, Y') }}
+                            </p>
+                            <p>
+                                <strong>Last Updated:</strong>
+                                {{ $item->updated_at->format('M d, Y') }}
+                            </p>
                         </div>
                     </div>
-                    @endif
 
                     <!-- Description -->
                     @if($item->description)
-                    <div class="description-section mb-4">
-                        <h5><i class="fas fa-align-left"></i> Description</h5>
-                        <p class="text-muted">{{ $item->description }}</p>
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p class="text-justify">{{ $item->description }}</p>
                     </div>
                     @endif
 
-                    <!-- Collection & Categories -->
-                    <div class="info-section mb-4">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-folder"></i> Collection</h6>
-                                <p class="text-muted">
-                                    {{ $item->collection->name ?? 'No collection' }}<br>
-                                    @if($item->collection && $item->collection->community)
-                                    <small>Community: {{ $item->collection->community->name }}</small>
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-tags"></i> Categories</h6>
-                                <div class="mb-2">
-                                    @if(isset($item->categories) && $item->categories->count() > 0)
-                                        @foreach($item->categories as $category)
-                                        <span class="badge badge-secondary">{{ $category->name }}</span>
-                                        @endforeach
-                                    @else
-                                        <span class="text-muted">No categories</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Metadata -->
-                    @if(!empty($item->metadata) && is_array($item->metadata))
+                    <!-- Dublin Core Metadata -->
                     <div class="metadata-section">
-                        <h5><i class="fas fa-tags"></i> Metadata</h5>
+                        <h5>Dublin Core Metadata</h5>
+                        @php
+                            $metadata = json_decode($item->metadata, true) ?? [];
+                        @endphp
+                        
                         <div class="row">
-                            @foreach($item->metadata as $key => $value)
-                            @if(!empty($value))
-                            <div class="col-md-6 mb-2">
-                                <strong class="text-capitalize">{{ str_replace('_', ' ', $key) }}:</strong>
-                                <span class="text-muted">
-                                    @if(is_array($value))
-                                        {{ implode(', ', $value) }}
-                                    @else
-                                        {{ $value }}
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <!-- Title -->
+                                    <tr>
+                                        <th class="text-muted" style="width: 30%">Title:</th>
+                                        <td>{{ $metadata['dc_title'][0] ?? $item->title }}</td>
+                                    </tr>
+                                    
+                                    <!-- Creators -->
+                                    @if(isset($metadata['dc_creator']) && !empty($metadata['dc_creator']))
+                                    <tr>
+                                        <th class="text-muted">Creators:</th>
+                                        <td>
+                                            <ul class="list-unstyled mb-0">
+                                                @foreach($metadata['dc_creator'] as $creator)
+                                                <li>{{ $creator }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </td>
+                                    </tr>
                                     @endif
-                                </span>
+                                    
+                                    <!-- Subjects -->
+                                    @if(isset($metadata['dc_subject']) && !empty($metadata['dc_subject']))
+                                    <tr>
+                                        <th class="text-muted">Subjects:</th>
+                                        <td>
+                                            @foreach($metadata['dc_subject'] as $subject)
+                                            <span class="badge bg-light text-dark mb-1">{{ $subject }}</span>
+                                            @endforeach
+                                        </td>
+                                    </tr>
+                                    @endif
+                                </table>
                             </div>
-                            @endif
-                            @endforeach
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <!-- Description -->
+                                    @if(isset($metadata['dc_description']) && !empty($metadata['dc_description']))
+                                    <tr>
+                                        <th class="text-muted" style="width: 30%">Description:</th>
+                                        <td>{{ $metadata['dc_description'][0] }}</td>
+                                    </tr>
+                                    @endif
+                                    
+                                    <!-- Publisher -->
+                                    @if(isset($metadata['dc_publisher']) && !empty($metadata['dc_publisher']))
+                                    <tr>
+                                        <th class="text-muted">Publisher:</th>
+                                        <td>{{ $metadata['dc_publisher'][0] }}</td>
+                                    </tr>
+                                    @endif
+                                    
+                                    <!-- Date Issued -->
+                                    @if(isset($metadata['dc_date_issued']) && !empty($metadata['dc_date_issued']))
+                                    <tr>
+                                        <th class="text-muted">Date Issued:</th>
+                                        <td>{{ $metadata['dc_date_issued'][0] }}</td>
+                                    </tr>
+                                    @endif
+                                    
+                                    <!-- Type -->
+                                    @if(isset($metadata['dc_type']) && !empty($metadata['dc_type']))
+                                    <tr>
+                                        <th class="text-muted">Type:</th>
+                                        <td>{{ $metadata['dc_type'][0] }}</td>
+                                    </tr>
+                                    @endif
+                                    
+                                    <!-- Format -->
+                                    @if(isset($metadata['dc_format']) && !empty($metadata['dc_format']))
+                                    <tr>
+                                        <th class="text-muted">Format:</th>
+                                        <td>{{ $metadata['dc_format'][0] }}</td>
+                                    </tr>
+                                    @endif
+                                    
+                                    <!-- Identifier -->
+                                    @if(isset($metadata['dc_identifier']) && !empty($metadata['dc_identifier']))
+                                    <tr>
+                                        <th class="text-muted">Identifier:</th>
+                                        <td><code>{{ $metadata['dc_identifier'][0] }}</code></td>
+                                    </tr>
+                                    @endif
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    @endif
-                </div>
-            </div>
 
-            <!-- Version History (if available) -->
-            @php
-                $hasVersions = method_exists($item, 'versions') && $item->versions()->exists();
-            @endphp
-            
-            @if($hasVersions)
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-history mr-2"></i>
-                        Recent Versions
-                    </h5>
+                    <!-- Raw JSON Metadata (for debugging) -->
+                    <details class="mt-4">
+                        <summary class="btn btn-sm btn-outline-secondary">View Raw Metadata JSON</summary>
+                        <pre class="mt-2 p-3 bg-light rounded"><code>{{ json_encode($metadata, JSON_PRETTY_PRINT) }}</code></pre>
+                    </details>
                 </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        @foreach($item->versions()->take(3)->get() as $version)
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">
-                                    <span class="badge badge-primary">v{{ $version->version_number }}</span>
-                                    {{ $version->title }}
-                                </h6>
-                                <small class="text-muted">{{ $version->created_at->diffForHumans() }}</small>
-                            </div>
-                            @if($version->changes)
-                            <p class="mb-1 small text-muted">{{ $version->changes }}</p>
-                            @endif
-                            <small class="text-muted">By {{ $version->user->name ?? 'Unknown' }}</small>
-                        </div>
-                        @endforeach
-                    </div>
-                    @php
-                        $versionCount = $item->versions()->count();
-                    @endphp
-                    @if($versionCount > 3)
-                    <div class="text-center mt-3">
-                        <a href="{{ route('items.versions', $item) }}" class="btn btn-sm btn-outline-primary">
-                            View All Versions ({{ $versionCount }})
+                <div class="card-footer">
+                    <div class="btn-group">
+                        <a href="{{ route('items.edit', $item->id) }}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Item
+                        </a>
+                        <a href="{{ route('repository.item', $item->id) }}" class="btn btn-info" target="_blank">
+                            <i class="fas fa-eye"></i> View Public Page
+                        </a>
+                        <a href="{{ route('items.index') }}" class="btn btn-default">
+                            <i class="fas fa-arrow-left"></i> Back to List
                         </a>
                     </div>
-                    @endif
                 </div>
             </div>
-            @endif
-
-            <!-- Workflow History -->
-            @if(file_exists(resource_path('views/workflow/show.blade.php')))
-                @include('workflow.show')
-            @endif
         </div>
-
+        
         <div class="col-md-4">
-            <!-- Actions Card -->
+            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-cog mr-2"></i>
-                        Actions
-                    </h3>
+                    <h5 class="card-title">Quick Actions</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ route('items.edit', $item) }}" class="btn btn-primary">
-                            <i class="fas fa-edit mr-1"></i> Edit Item
-                        </a>
-                        
-                        <!-- Version Management -->
-                        @php
-                            $hasVersions = method_exists($item, 'versions') && $item->versions()->exists();
-                            $versionCount = $hasVersions ? $item->versions()->count() : 0;
-                        @endphp
-                        
-                        @if($hasVersions && $versionCount > 0)
-                        <a href="{{ route('items.versions', $item) }}" class="btn btn-info">
-                            <i class="fas fa-history mr-1"></i> 
-                            Versions ({{ $versionCount }})
-                        </a>
-                        @endif
-
-                        <!-- Workflow -->
-                        @if(route('workflow.show', $item) && $item->workflow_state)
-                        <a href="{{ route('workflow.show', $item) }}" class="btn btn-warning">
-                            <i class="fas fa-tasks mr-1"></i> Workflow
-                        </a>
-                        @endif
-
-                        <!-- Delete Form -->
-                        <form action="{{ route('items.destroy', $item) }}" method="POST" class="d-grid">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger" 
-                                    onclick="return confirm('Are you sure you want to delete this item?')">
-                                <i class="fas fa-trash mr-1"></i> Delete Item
+                        @if($item->workflow_state == 'draft')
+                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="workflow_state" value="pending_review">
+                            <button type="submit" class="btn btn-warning btn-block">
+                                <i class="fas fa-paper-plane"></i> Submit for Review
                             </button>
                         </form>
+                        @endif
+                        
+                        @if($item->workflow_state == 'pending_review')
+                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="workflow_state" value="published">
+                            <button type="submit" class="btn btn-success btn-block">
+                                <i class="fas fa-check"></i> Publish Item
+                            </button>
+                        </form>
+                        @endif
+                        
+                        @if($item->workflow_state == 'published')
+                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="workflow_state" value="draft">
+                            <button type="submit" class="btn btn-secondary btn-block">
+                                <i class="fas fa-undo"></i> Unpublish
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Item Information Card -->
-            <div class="card mt-4">
+            <!-- Collection Info -->
+            <div class="card mt-3">
                 <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Item Information
-                    </h3>
+                    <h5 class="card-title">Collection Information</h5>
                 </div>
                 <div class="card-body">
-                    <table class="table table-sm table-borderless">
-                        <tr>
-                            <td><strong>Created:</strong></td>
-                            <td class="text-muted">
-                                <span title="{{ $item->created_at->format('M j, Y g:i A') }}">
-                                    {{ $item->created_at->diffForHumans() }}
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>By:</strong></td>
-                            <td class="text-muted">{{ $item->user->name ?? 'Unknown' }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Updated:</strong></td>
-                            <td class="text-muted">
-                                <span title="{{ $item->updated_at->format('M j, Y g:i A') }}">
-                                    {{ $item->updated_at->diffForHumans() }}
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>File Type:</strong></td>
-                            <td class="text-muted">{{ $item->file_type ?? 'Text' }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>File Size:</strong></td>
-                            <td class="text-muted">
-                                @if($item->file_size)
-                                    {{ number_format($item->file_size / 1024, 2) }} KB
-                                @else
-                                    N/A
-                                @endif
-                            </td>
-                        </tr>
-                        @if($item->collection)
-                        <tr>
-                            <td><strong>Collection:</strong></td>
-                            <td class="text-muted">{{ $item->collection->name }}</td>
-                        </tr>
-                        @endif
-                    </table>
-                </div>
-            </div>
-
-            <!-- Quick Stats Card -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-bar mr-2"></i>
-                        Quick Stats
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <!-- Workflow Actions Count -->
-                    <div class="small-box bg-info mb-3">
-                        <div class="inner">
-                            <h3>{{ isset($item->workflowActions) ? $item->workflowActions->count() : 0 }}</h3>
-                            <p>Workflow Actions</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-history"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- Last Action -->
-                    <div class="mt-3">
-                        <strong>Last Action:</strong><br>
-                        @if(isset($item->workflowActions) && $item->workflowActions->count() > 0)
-                            @php $lastAction = $item->workflowActions->last(); @endphp
-                            <span class="text-primary">
-                                {{ $lastAction->workflowStep->name ?? 'Unknown step' }}
-                            </span>
-                            by {{ $lastAction->user->name ?? 'Unknown user' }}<br>
-                            <small class="text-muted">{{ $lastAction->created_at->diffForHumans() }}</small>
-                        @else
-                            <small class="text-muted">No actions yet</small>
-                        @endif
-                    </div>
-
-                    <!-- Version Count -->
-                    @php
-                        $hasVersions = method_exists($item, 'versions') && $item->versions()->exists();
-                        $versionCount = $hasVersions ? $item->versions()->count() : 0;
-                    @endphp
-                    
-                    @if($hasVersions)
-                    <div class="mt-3">
-                        <strong>Versions:</strong><br>
-                        <span class="text-info">{{ $versionCount }} versions</span><br>
-                        <small class="text-muted">
-                            Last updated {{ $item->updated_at->diffForHumans() }}
-                        </small>
-                    </div>
+                    <p>
+                        <strong>Collection:</strong><br>
+                        {{ $item->collection->name }}
+                    </p>
+                    <p>
+                        <strong>Community:</strong><br>
+                        {{ $item->collection->community->name }}
+                    </p>
+                    @if($item->collection->description)
+                    <p>
+                        <strong>Description:</strong><br>
+                        {{ $item->collection->description }}
+                    </p>
                     @endif
                 </div>
             </div>
-
-            <!-- Workflow Status Component -->
-            @if(file_exists(resource_path('views/components/workflow-status.blade.php')))
-                @include('components.workflow-status', ['item' => $item])
-            @endif
         </div>
     </div>
 </div>
 @endsection
 
-@section('css')
+@section('styles')
 <style>
-.small-box {
-    border-radius: 0.25rem;
-    box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
-    display: block;
-    margin-bottom: 20px;
-    position: relative;
-    background: #17a2b8;
-    color: white;
-    padding: 15px;
+.metadata-section {
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 20px;
+    border-left: 4px solid #007bff;
 }
-.small-box > .inner { padding: 10px; }
-.small-box h3 { 
-    font-size: 2.2rem; 
-    font-weight: bold; 
-    margin: 0 0 10px 0; 
-    white-space: nowrap; 
-    padding: 0; 
-    color: white;
-}
-.small-box p { 
-    margin: 0;
-    color: rgba(255,255,255,0.8);
-}
-.small-box .icon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 0;
-    font-size: 70px;
-    color: rgba(0,0,0,0.15);
-}
-.file-section, .description-section, .info-section, .metadata-section {
-    border-bottom: 1px solid #eaeaea;
-    padding-bottom: 1rem;
-}
-.file-section:last-child, .description-section:last-child, 
-.info-section:last-child, .metadata-section:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+.table-borderless th {
+    width: 30%;
 }
 </style>
 @endsection

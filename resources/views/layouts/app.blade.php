@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <!-- Custom CSS -->
     <link href="{{ url('/css/custom.css') }}" rel="stylesheet">
+    <!-- Load Chart.js in the head -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Breeze Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -108,12 +110,12 @@
                                     <p>Dashboard</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
+                            {{-- <li class="nav-item">
                                 <a href="{{ route('dashboard') }}" class="nav-link">
                                     <i class="nav-icon fas fa-tachometer-alt"></i>
                                     <p>Dashboard</p>
                                 </a>
-                            </li>
+                            </li> --}}
                             <!-- Administration Section - Admin/Manager only -->
                             @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                             <li class="nav-header">ADMINISTRATION</li>
@@ -326,6 +328,7 @@
     <!-- DataTables AFTER jQuery -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    {{-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --}}
     <!-- AdminLTE App -->
     <script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
 

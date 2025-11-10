@@ -59,7 +59,7 @@ class ItemController extends Controller
         $collections = Collection::with('community')->get();
         $categories = Category::all();
         // dd($userId);
-        return view('items.create', compact('collections', 'categories'));
+        return view('items.form', compact('collections', 'categories'));
     }
     
 
@@ -185,6 +185,7 @@ class ItemController extends Controller
     public function show(Item $item)
     {
         $item->load(['collection.community', 'categories']);
+        // dd(is_array($item->metadata));
         return view('items.show', compact('item'));
     }
 
@@ -194,7 +195,7 @@ class ItemController extends Controller
         $collections = Collection::with('community')->get();
         $categories = Category::all();
         // dd($item);
-        return view('items.edit', compact('item', 'collections', 'categories'));
+        return view('items.form', compact('item', 'collections', 'categories'));
     }
 
     public function update(Request $request, Item $item)

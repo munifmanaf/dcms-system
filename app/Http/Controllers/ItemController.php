@@ -112,31 +112,17 @@ class ItemController extends Controller
             $storedFileSize = \Storage::disk('public')->size($filePath);
             $storedMimeType = \Storage::disk('public')->mimeType($filePath);
 
-            // Build metadata
-            // $metadata = [];
-            // if ($request->filled('metadata.author')) {
-            //     $metadata['author'] = $request->metadata['author'];
-            // }
-            // if ($request->filled('metadata.year')) {
-            //     $metadata['year'] = $request->metadata['year'];
-            // }
-            // if ($request->filled('metadata.language')) {
-            //     $metadata['language'] = $request->metadata['language'];
-            // }
-            // if ($request->filled('metadata.pages')) {
-            //     $metadata['pages'] = $request->metadata['pages'];
-            // }
-            
-            // if ($request->has('metadata_keys')) {
-            //     foreach ($request->metadata_keys as $index => $key) {
-            //         $value = $request->metadata_values[$index] ?? '';
-            //         if (!empty(trim($key)) && !empty(trim($value))) {
-            //             $metadata[trim($key)] = trim($value);
-            //         }
-            //     }
-            // }
-
-            // When saving items, structure metadata like DSpace:
+             $metadata = [
+                'dc_title' => [$request->title],
+                'dc_creator' => $request->dc_creator ? explode(',', $request->dc_creator) : [],
+                'dc_subject' => $request->dc_subject ? explode(',', $request->dc_subject) : [],
+                'dc_description' => $request->dc_description ? [$request->dc_description] : [],
+                'dc_publisher' => $request->dc_publisher ? [$request->dc_publisher] : [],
+                'dc_date_issued' => $request->dc_date_issued ? [$request->dc_date_issued] : [],
+                'dc_type' => $request->dc_type ? [$request->dc_type] : [],
+                'dc_format' => $request->dc_format ? [$request->dc_format] : [],
+                'dc_identifier' => $request->dc_identifier ? [$request->dc_identifier] : [],
+            ];
 
 
             // Create item
@@ -152,16 +138,6 @@ class ItemController extends Controller
                 'file_size' => $storedFileSize,
                 'file_type' => $storedMimeType ?: $file->getClientMimeType(),
             ]);
-
-            $metadata = [
-                'dc_title' => [$request->title],
-                'dc_creator' => is_array($request->creators) ? $request->creators : [],
-                'dc_subject' => is_array($request->subjects) ? $request->subjects : [],
-                'dc_description' => [$request->description],
-                'dc_date_issued' => [$request->date_issued],
-                'dc_type' => [$request->type],
-                'dc_identifier' => ['item-' . $item->id],
-            ];
 
             $item->metadata = $metadata;
             $item->save();
@@ -200,31 +176,45 @@ class ItemController extends Controller
 
     public function update(Request $request, Item $item)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'collection_id' => 'required|exists:collections,id',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-            'is_published' => 'boolean',
-            'file' => 'nullable|file|max:10240',
-            'changes' => 'nullable|string|max:500', // What changed in this update
-        ]);
 
+        // $request->validate([
+        //     'title' => 'required|string|max:255',
+        //     'description' => 'nullable|string',
+        //     'collection_id' => 'required|exists:collections,id',
+        //     'categories' => 'nullable|array',
+        //     'categories.*' => 'exists:categories,id',
+        //     'is_published' => 'boolean',
+        //     'file' => 'nullable|file|max:10240',
+        //     'changes' => 'nullable|string|max:500', // What changed in this update
+        // ]);
+        // dd($item);
         try {
             $item->createVersion($request->changes);
             // Build metadata
-            $metadata = [];
+            
             // ... your metadata building code ...
-
-            $updateData = [
-                'title' => $request->title,
-                'description' => $request->description,
-                'collection_id' => $request->collection_id,
-                'is_published' => $request->boolean('is_published', false),
-                'metadata' => $metadata,
+            $metadata = [
+                'dc_title' => [$request->title],
+                'dc_creator' => $request->dc_creator ? array_map('trim', explode(',', $request->dc_creator)) : [],
+                'dc_subject' => $request->dc_subject ? array_map('trim', explode(',', $request->dc_subject)) : [],
+                'dc_description' => $request->dc_description ? [$request->dc_description] : [],
+                'dc_publisher' => $request->dc_publisher ? [$request->dc_publisher] : [],
+                'dc_date_issued' => $request->dc_date_issued ? [$request->dc_date_issued] : [],
+                'dc_type' => $request->dc_type ? [$request->dc_type] : [],
+                'dc_format' => $request->dc_format ? [$request->dc_format] : [],
+                'dc_identifier' => $request->dc_identifier ? [$request->dc_identifier] : [],
             ];
 
+            // dd($metadata);
+            $updateData = [
+                'title' => isset($request->title) ? $request->title : $item->title,
+                'description' => isset($request->description) ? $request->description : $item->description,
+                'collection_id' =>isset($request->collection_id) ? $request->collection_id : $item->collection_id,
+                // 'is_published' => isset($request->boolean('is_published', false)) ? $request->boolean('is_published', false) : 'true' ,
+                'metadata' => $metadata,
+                'workflow_state' => isset($request->workflow_state) ? $request->workflow_state : $item->workflow_state
+            ];
+            // dd($updateData);
             // Handle file upload using the method that worked for you
             if ($request->hasFile('file') && $request->file('file')->isValid()) {
                 $file = $request->file('file');
@@ -254,25 +244,45 @@ class ItemController extends Controller
                 $storedFileSize = \Storage::disk('public')->size($filePath);
                 $storedMimeType = \Storage::disk('public')->mimeType($filePath);
 
+                $file = $request->file('file');
+                $originalExtension = strtolower($file->getClientOriginalExtension());
+
+                $extensionMap = [
+                    'xlsx' => 'Dataset',
+                    'xls' => 'Dataset', 
+                    'csv' => 'Dataset',
+                    'pdf' => 'PDF',
+                    'doc' => 'Word Document',
+                    'docx' => 'Word Document',
+                    'jpg' => 'Image',
+                    'jpeg' => 'Image',
+                    'png' => 'Image',
+                    'gif' => 'Image',
+                    'mp4' => 'Video',
+                    'avi' => 'Video',
+                ];
+
+                $fileType = $extensionMap[$originalExtension] ?? 'Other';
                 // Add file data to update
                 $updateData['file_path'] = $filePath;
                 $updateData['file_name'] = $originalName;
                 $updateData['file_size'] = $storedFileSize;
-                $updateData['file_type'] = $storedMimeType ?: $file->getClientMimeType();
+                $updateData['file_type'] = $fileType;
 
                 // Delete old file
                 $this->deleteOldFile($item->file_path);
             }
 
             // Update the item
-            $item->update($updateData);
-
+            $item = Item::where('id', $item->id) // Make sure you have the fresh instance
+                    ->update($updateData);
+            
             // Handle categories
-            if ($request->has('categories')) {
-                $item->categories()->sync($request->categories);
-            } else {
-                $item->categories()->detach();
-            }
+            // if ($request->has('categories')) {
+            //     $item->categories()->sync($request->categories);
+            // } else {
+            //     $item->categories()->detach();
+            // }
 
             return redirect()->route('items.index')
                 ->with('success', 'Item updated successfully.');

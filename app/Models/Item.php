@@ -27,6 +27,7 @@ class Item extends Model
         'file_size',
         'file_type',
         'slug',
+        'workflow_state'
     ];
 
     protected $casts = [

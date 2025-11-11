@@ -58,7 +58,9 @@
                     <div class="metadata-section">
                         <h5>Dublin Core Metadata</h5>
                         @php
-                            $metadata = json_decode($item->metadata, true) ?? [];
+                            if (isset($item) && $item->metadata) {
+                                $metadata = is_array($item->metadata) ? $item->metadata : json_decode($item->metadata, true);
+                            }
                         @endphp
                         
                         <div class="row">
@@ -157,6 +159,9 @@
                         <pre class="mt-2 p-3 bg-light rounded"><code>{{ json_encode($metadata, JSON_PRETTY_PRINT) }}</code></pre>
                     </details>
                 </div>
+                
+                
+
                 <div class="card-footer">
                     <div class="btn-group">
                         <a href="{{ route('items.edit', $item->id) }}" class="btn btn-primary">
@@ -205,6 +210,7 @@
                         <form action="{{ route('items.update', $item->id) }}" method="POST">
                             @csrf @method('PUT')
                             <input type="hidden" name="workflow_state" value="draft">
+                            <input type="hidden" name="item_id" value="{{$item->id}}">
                             <button type="submit" class="btn btn-secondary btn-block">
                                 <i class="fas fa-undo"></i> Unpublish
                             </button>
@@ -213,7 +219,17 @@
                     </div>
                 </div>
             </div>
-
+        <!-- Enhanced Workflow Status Display -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-tasks"></i> Workflow Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @include('workflow.show', ['item' => $item])
+                </div>
+            </div>
             <!-- Collection Info -->
             <div class="card mt-3">
                 <div class="card-header">
@@ -236,6 +252,7 @@
                     @endif
                 </div>
             </div>
+            
         </div>
     </div>
 </div>

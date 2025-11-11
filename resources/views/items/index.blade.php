@@ -64,10 +64,37 @@
                                 <div class="card-body">
                                     <!-- File Type Badge -->
                                     @if($item->file_type)
+                                        
                                     <div class="mb-2">
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-file"></i> {{ $item->file_type }}
+                                        @if(str_contains($item->file_type, 'Image'))
+                                        <span class="badge badge-info badge-sm">
+                                            <i class="fas fa-image mr-1"></i>Image
                                         </span>
+                                        @elseif(str_contains($item->file_type, 'PDF'))
+                                        <span class="badge badge-danger badge-sm">
+                                            <i class="fas fa-file-pdf mr-1"></i>PDF
+                                        </span>
+                                        @elseif(str_contains($item->file_type, 'Word Document') || str_contains($item->file_type, 'document'))
+                                        <span class="badge badge-primary badge-sm">
+                                            <i class="fas fa-file-word mr-1"></i>Document
+                                        </span>
+                                        @elseif(str_contains($item->file_type, 'Dataset') || str_contains($item->file_type, 'spreadsheet'))
+                                        <span class="badge badge-success badge-sm">
+                                            <i class="fas fa-file-excel mr-1"></i>Spreadsheet
+                                        </span>
+                                        @elseif(str_contains($item->file_type, 'Video'))
+                                        <span class="badge badge-warning badge-sm">
+                                            <i class="fas fa-file-video mr-1"></i>Video
+                                        </span>
+                                        @elseif(str_contains($item->file_type, 'Audio'))
+                                        <span class="badge badge-secondary badge-sm">
+                                            <i class="fas fa-file-audio mr-1"></i>Audio
+                                        </span>
+                                        @else
+                                        <span class="badge badge-secondary badge-sm">
+                                            <i class="fas fa-file mr-1"></i>File
+                                        </span>
+                                        @endif
                                     </div>
                                     @endif
 
@@ -82,7 +109,9 @@
                                     <div class="metadata-section">
                                         <!-- Authors -->
                                         @php
-                                            $metadata = json_decode($item->metadata, true) ?? [];
+                                            if (isset($item) && $item->metadata) {
+                                                $metadata = is_array($item->metadata) ? $item->metadata : json_decode($item->metadata, true);
+                                            }
                                             $creators = $metadata['dc_creator'] ?? [];
                                             $subjects = $metadata['dc_subject'] ?? [];
                                             $dateIssued = $metadata['dc_date_issued'][0] ?? null;

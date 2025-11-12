@@ -158,9 +158,120 @@
                         <summary class="btn btn-sm btn-outline-secondary">View Raw Metadata JSON</summary>
                         <pre class="mt-2 p-3 bg-light rounded"><code>{{ json_encode($metadata, JSON_PRETTY_PRINT) }}</code></pre>
                     </details>
+                    <br>
+                    <hr>
+                    <br>
+                    @if (str_contains($item->file_type, 'Image') || str_contains($item->file_type, 'Video') || 
+                    str_contains($item->file_type, 'PDF') || str_contains($item->file_type, 'Word Document') ||
+                    str_contains($item->file_type, 'Dataset'))
+                    <div class="preview-section mt-4">
+                        <h5>File Preview</h5>
+                        <div class="file-preview mt-2">
+                            @if (str_contains($item->file_type, 'Image'))
+                                <!-- Image Preview -->
+                                <div class="image-preview text-center">
+                                    <img src="{{ asset('storage/' . $item->file_path) }}" 
+                                        alt="{{ $item->title }}" 
+                                        class="img-fluid rounded shadow-sm" 
+                                        style="max-height: 400px; max-width: 100%;"
+                                        onerror="this.style.display='none'">
+                                    <div class="mt-2">
+                                        <small class="text-muted">Click image to view full size</small>
+                                    </div>
+                                </div>
+                                
+                            @elseif (str_contains($item->file_type, 'Video'))
+                                <!-- Video Preview -->
+                                <div class="video-preview text-center">
+                                    <video controls class="rounded shadow-sm" style="max-width: 100%; max-height: 400px;">
+                                        <source src="{{ asset('storage/' . $item->file_path) }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Video preview - use controls to play/pause</small>
+                                    </div>
+                                </div>
+                                
+                            @elseif (str_contains($item->file_type, 'PDF'))
+                                <!-- PDF Preview -->
+                                <div class="pdf-preview text-center">
+                                    <div class="pdf-placeholder bg-light rounded p-4 mb-3">
+                                        <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+                                        <h5>PDF Document</h5>
+                                        <p class="text-muted">{{ basename($item->file_path) }}</p>
+                                    </div>
+                                    <iframe src="{{ asset('storage/' . $item->file_path) }}#toolbar=0" 
+                                            width="100%" 
+                                            height="500" 
+                                            class="border rounded"
+                                            onerror="this.style.display='none'">
+                                        Your browser doesn't support PDF preview. 
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" target="_blank">Download instead</a>.
+                                    </iframe>
+                                    <div class="mt-2">
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        target="_blank" 
+                                        class="btn btn-primary btn-sm">
+                                            <i class="fas fa-external-link-alt"></i> Open in New Tab
+                                        </a>
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        download 
+                                        class="btn btn-success btn-sm">
+                                            <i class="fas fa-download"></i> Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                            @elseif (str_contains($item->file_type, 'Word Document'))
+                                <!-- Word Document Preview -->
+                                <div class="word-preview text-center">
+                                    <div class="word-placeholder bg-light rounded p-4 mb-3">
+                                        <i class="fas fa-file-word fa-4x text-primary mb-3"></i>
+                                        <h5>Word Document</h5>
+                                        <p class="text-muted">{{ basename($item->file_path) }}</p>
+                                        <p class="small text-muted">Preview not available for Word documents</p>
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        target="_blank" 
+                                        class="btn btn-primary btn-sm">
+                                            <i class="fas fa-external-link-alt"></i> Open in Word
+                                        </a>
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        download 
+                                        class="btn btn-success btn-sm">
+                                            <i class="fas fa-download"></i> Download Document
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                            @elseif (str_contains($item->file_type, 'Dataset'))
+                                <!-- Excel/Dataset Preview -->
+                                <div class="excel-preview text-center">
+                                    <div class="excel-placeholder bg-light rounded p-4 mb-3">
+                                        <i class="fas fa-file-excel fa-4x text-success mb-3"></i>
+                                        <h5>Spreadsheet Dataset</h5>
+                                        <p class="text-muted">{{ basename($item->file_path) }}</p>
+                                        <p class="small text-muted">Preview not available for spreadsheet files</p>
+                                    </div>
+                                    <div class="mt-2">
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        target="_blank" 
+                                        class="btn btn-primary btn-sm">
+                                            <i class="fas fa-external-link-alt"></i> Open in Excel
+                                        </a>
+                                        <a href="{{ asset('storage/' . $item->file_path) }}" 
+                                        download 
+                                        class="btn btn-success btn-sm">
+                                            <i class="fas fa-download"></i> Download Dataset
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
                 </div>
-                
-                
 
                 <div class="card-footer">
                     <div class="btn-group">
@@ -252,10 +363,38 @@
                     @endif
                 </div>
             </div>
-            
+            <div class="modal fade" id="imageModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ $item->title }}</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="" id="fullSizeImage" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+// Image modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const image = document.querySelector('.image-preview img');
+    if (image) {
+        image.addEventListener('click', function() {
+            const fullSizeImage = document.getElementById('fullSizeImage');
+            fullSizeImage.src = this.src;
+            $('#imageModal').modal('show');
+        });
+    }
+});
+</script>
 @endsection
 
 @section('styles')
@@ -268,6 +407,26 @@
 }
 .table-borderless th {
     width: 30%;
+}
+
+.file-preview {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+.image-preview img, .video-preview video {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+.image-preview img:hover {
+    transform: scale(1.02);
+}
+.video-preview video {
+    background: #000;
+}
+.pdf-placeholder, .word-placeholder, .excel-placeholder {
+    border: 2px dashed #dee2e6;
 }
 </style>
 @endsection

@@ -188,6 +188,20 @@ class RepositoryController extends Controller
         ->limit(5)
         ->get();
 
+        // Add download stats
+        $downloadStats = [
+            'total_downloads' => Item::sum('download_count'),
+            'total_views' => Item::sum('view_count'),
+            'most_downloaded' => Item::with('collection')->orderBy('download_count', 'desc')->limit(5)->get(),
+            'most_viewed' => Item::with('collection')->orderBy('view_count', 'desc')->limit(5)->get(),
+            'recent_downloads' => Item::where('last_downloaded_at', '>=', now()->subDays(7))->count(),
+        ];
+
+        // Add to existing stats...
+        $stats['download_stats'] = $downloadStats;
+    
+    return view('repository.statistics', compact('repository', 'stats'));
+
         $stats = [
             'total_items' => Item::count(),
             'total_communities' => Community::count(),
@@ -205,6 +219,18 @@ class RepositoryController extends Controller
         ];
 
         return view('repository.statistics', compact('repository', 'stats'));
+    }
+
+    public function download($id)
+    {
+        $item = Item::findOrFail($id);
+        
+        // Update stats
+        $item->increment('download_count');
+        $item->last_downloaded_at = now();
+        $item->save();
+        
+        return Storage::download($item->file_path);
     }
 
     private function getFileTypesFromMetadata()

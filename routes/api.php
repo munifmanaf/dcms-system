@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OAIController;
 use App\Http\Controllers\ItemController;
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,9 @@ use App\Http\Controllers\ItemController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// routes/api.php
+Route::get('/oai', [OAIController::class, 'handleRequest'])->name('oai.pmh');
 
 // routes/api.php
 Route::apiResource('items', ItemController::class);

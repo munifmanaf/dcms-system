@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WorkflowController;
+use App\Http\Controllers\BatchController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -148,6 +149,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/repository/settings', [RepositoryController::class, 'settings'])->name('admin.repository.settings');
     Route::put('/admin/repository/settings', [RepositoryController::class, 'updateSettings'])->name('admin.repository.settings.update');
 
+
+    // routes/web.php
+Route::prefix('batch')->group(function () {
+    Route::get('/', [BatchController::class, 'index'])->name('batch.index');
+    Route::post('/export', [BatchController::class, 'exportItems'])->name('batch.export');
+    Route::post('/import', [BatchController::class, 'importItems'])->name('batch.import');
+    Route::post('/status-update', [BatchController::class, 'bulkStatusUpdate'])->name('batch.status-update');
+});
     // System Management Routes - ADMIN ONLY
     // Enhanced system routes
     Route::prefix('system')->name('system.')->middleware('auth')->group(function () {

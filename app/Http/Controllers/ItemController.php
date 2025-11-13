@@ -53,6 +53,61 @@ class ItemController extends Controller
         return view('items.index', compact('items', 'categories', 'collections'));
     }
 
+    public function search(Request $request)
+    {
+        $query = Item::where('workflow_state', 'published');
+        
+        // Keyword search
+        if ($request->has('q') && !empty($request->q)) {
+            $searchTerm = $request->q;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('description', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('content', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('metadata', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+        
+        // Collection filter
+        if ($request->has('collection') && !empty($request->collection)) {
+            $query->where('collection_id', $request->collection);
+        }
+        
+        // File type filter
+        if ($request->has('file_type') && !empty($request->file_type)) {
+            $query->where('file_type', 'LIKE', "%{$request->file_type}%");
+        }
+        
+        // Date range
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            $query->where('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            $query->where('created_at', '<=', $request->date_to);
+        }
+        
+        // Sort options
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'title':
+                $query->orderBy('title', 'asc');
+                break;
+            case 'popular':
+                $query->orderBy('download_count', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+        }
+        
+        $items = $query->paginate(12);
+        $collections = Collection::all();
+        
+        return view('items.search', compact('items', 'collections'));
+    }
+
     public function create()
     {
         $userId = auth()->id();

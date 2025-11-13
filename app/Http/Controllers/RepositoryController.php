@@ -199,8 +199,6 @@ class RepositoryController extends Controller
 
         // Add to existing stats...
         $stats['download_stats'] = $downloadStats;
-    
-    return view('repository.statistics', compact('repository', 'stats'));
 
         $stats = [
             'total_items' => Item::count(),

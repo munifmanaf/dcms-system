@@ -10,6 +10,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WorkflowController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BatchController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -64,6 +65,13 @@ Route::get('/home', function () {
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : view('welcome');
 });
+
+// OAI-PMH Protocol Route
+    Route::get('/oai', [App\Http\Controllers\OAIController::class, 'index'])->name('oai-pmh');
+    // Simple test route
+    Route::get('/oai-test', function() {
+        return response('OAI Test Works!', 200);
+    });
 
 Route::middleware('auth')->group(function () {
     // Profile Routes (from Breeze) - KEEP THESE
@@ -125,6 +133,15 @@ Route::middleware('auth')->group(function () {
     // Version-specific routes
     Route::get('/item-versions/{version}/download', [ItemController::class, 'downloadVersion'])->name('items.versions.download');
 
+    // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/usage', [ReportController::class, 'usageStats'])->name('reports.usage');
+    Route::get('/reports/collections', [ReportController::class, 'collectionReport'])->name('reports.collections');
+    Route::get('/reports/export', [ReportController::class, 'exportReport'])->name('reports.export');
+
+    // Advanced Search
+    Route::get('/search', [ItemController::class, 'search'])->name('items.search');
+
     // User Management Routes - ADMIN ONLY
     Route::middleware('role:admin')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -137,7 +154,7 @@ Route::middleware('auth')->group(function () {
 
     // routes/web.php
 
-// Public routes
+    // Public routes
     Route::get('/repository', [RepositoryController::class, 'index'])->name('repository.index');
     Route::get('/repository/browse', [RepositoryController::class, 'browse'])->name('repository.browse');
     Route::get('/repository/statistics', [RepositoryController::class, 'statistics'])->name('repository.statistics');
@@ -151,12 +168,14 @@ Route::middleware('auth')->group(function () {
 
 
     // routes/web.php
-Route::prefix('batch')->group(function () {
-    Route::get('/', [BatchController::class, 'index'])->name('batch.index');
-    Route::post('/export', [BatchController::class, 'exportItems'])->name('batch.export');
-    Route::post('/import', [BatchController::class, 'importItems'])->name('batch.import');
-    Route::post('/status-update', [BatchController::class, 'bulkStatusUpdate'])->name('batch.status-update');
-});
+    Route::prefix('batch')->group(function () {
+        Route::get('/', [BatchController::class, 'index'])->name('batch.index');
+        Route::post('/export', [BatchController::class, 'exportItems'])->name('batch.export');
+        Route::post('/import', [BatchController::class, 'importItems'])->name('batch.import');
+        Route::post('/status-update', [BatchController::class, 'bulkStatusUpdate'])->name('batch.status-update');
+    });
+
+
     // System Management Routes - ADMIN ONLY
     // Enhanced system routes
     Route::prefix('system')->name('system.')->middleware('auth')->group(function () {

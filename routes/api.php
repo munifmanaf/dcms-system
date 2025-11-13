@@ -27,9 +27,9 @@ Route::apiResource('items', ItemController::class);
 Route::get('collections/{collection}/items', [ItemController::class, 'byCollection']);
 Route::post('items/{item}/download', [ItemController::class, 'download']);
 
-Route::apiResource('/collections', 'Api\CollectionController');
-Route::get('/search', 'Api\SearchController@index');
-Route::post('/submit', 'Api\SubmitController@store'); // SWORD-like
+// Route::apiResource('/collections', 'Api\CollectionController');
+// Route::get('/search', 'Api\SearchController@index');
+// Route::post('/submit', 'Api\SubmitController@store'); // SWORD-like
 
 // routes/api.php
 Route::get('/items', function() {

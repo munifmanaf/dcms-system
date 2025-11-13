@@ -235,6 +235,21 @@
                                     </li>
                                 </ul>
                             </li>
+                            {{-- Reports Menu --}}
+                            <li class="nav-item">
+                                <a href="{{ route('reports.index') }}" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+                                    <p>Analytics & Reports</p>
+                                </a>
+                            </li>
+
+                            {{-- Advanced Search --}}
+                            <li class="nav-item">
+                                <a href="{{ route('items.search') }}" class="nav-link {{ request()->is('search*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-search-plus"></i>
+                                    <p>Advanced Search</p>
+                                </a>
+                            </li>
                             <!-- User Management - Admin only -->
                             @if(auth()->user()->hasAnyRole(['admin', 'manager']))
                             <li class="nav-item">

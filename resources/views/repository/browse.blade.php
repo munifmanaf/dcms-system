@@ -98,7 +98,7 @@
                                 @foreach($items as $item)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('repository.item', $item->id) }}" class="font-weight-bold">
+                                        <a href="{{ route('items.show', $item->id) }}" class="font-weight-bold">
                                             {{ $item->title }}
                                         </a>
                                         @if($item->metadata['dc_description'][0] ?? false)

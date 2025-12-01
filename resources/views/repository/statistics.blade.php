@@ -179,7 +179,7 @@
                                 <div class="card-body p-0">
                                     <div class="list-group list-group-flush">
                                         @foreach($stats['recent_items'] as $item)
-                                        <a href="{{ route('repository.item', $item->id) }}" 
+                                        <a href="{{ route('items.show', $item->id) }}" 
                                            class="list-group-item list-group-item-action">
                                             <div class="d-flex w-100 justify-content-between">
                                                 <h6 class="mb-1">{{ Str::limit($item->title, 60) }}</h6>

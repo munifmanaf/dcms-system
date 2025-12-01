@@ -89,7 +89,7 @@ class RepositoryController extends Controller
         // Generate DSpace-like handle
         $handle = $repository->generateHandle($item->id);
 
-        return view('repository.item', compact('repository', 'item', 'handle'));
+        return view('items.show', compact('repository', 'item', 'handle'));
     }
 
     /**

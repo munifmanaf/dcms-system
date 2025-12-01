@@ -1,389 +1,543 @@
 <?php
-// database/seeders/DemoDataSeeder.php
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Community;
-use App\Models\Collection;
-use App\Models\Item;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Models\Collection;
+use App\Models\Item;
+use App\Models\Community; // Add this
+use Carbon\Carbon;
 
 class SampleDataSeeder extends Seeder
 {
     public function run()
     {
         // Clear existing data
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Item::truncate();
-        Collection::truncate();
-        Community::truncate();
-        User::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+        DB::table('items')->truncate();
+        DB::table('collections')->truncate();
+        DB::table('communities')->truncate(); // Add this
+        DB::table('users')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
-        // Create admin user
-        $user = User::create([
-            'email' => 'admin@repository.edu',
-            'name' => 'Repository Admin',
-            'password' => bcrypt('password'),
-        ]);
-
-        // Create researcher users
-        $researcher1 = User::create([
-            'email' => 'researcher1@university.edu',
-            'name' => 'Dr. Sarah Chen',
-            'password' => bcrypt('password'),
-        ]);
-
-        $researcher2 = User::create([
-            'email' => 'researcher2@university.edu',
-            'name' => 'Prof. Michael Brown',
-            'password' => bcrypt('password'),
-        ]);
-
-        // Create Communities
-        $engineering = Community::create(['name' => 'Faculty of Engineering', 'description' => 'Engineering research outputs']);
-        $science = Community::create(['name' => 'Faculty of Science', 'description' => 'Scientific research publications']);
-        $arts = Community::create(['name' => 'Faculty of Arts & Humanities', 'description' => 'Arts and humanities research']);
-        $medicine = Community::create(['name' => 'Faculty of Medicine', 'description' => 'Medical research and studies']);
-
-        // Create Collections
-        $collections = [
-            'engineering' => [
-                'Masters Theses' => $engineering->id,
-                'Research Papers' => $engineering->id,
-                'Technical Reports' => $engineering->id,
+        // Create Users with different roles (same as before)
+        $users = [
+            [
+                'name' => 'Admin User',
+                'email' => 'admin@dcms.test',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-            'science' => [
-                'Journal Articles' => $science->id,
-                'Research Datasets' => $science->id,
-                'Scientific Images' => $science->id,
-                'Research Videos' => $science->id,
+            [
+                'name' => 'Content Manager',
+                'email' => 'manager@dcms.test',
+                'password' => Hash::make('password'),
+                'role' => 'manager',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-            'arts' => [
-                'Literary Works' => $arts->id,
-                'Research Papers' => $arts->id,
-                'Creative Works' => $arts->id,
-                'Artwork Images' => $arts->id,
+            [
+                'name' => 'Researcher One',
+                'email' => 'researcher1@dcms.test',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-            'medicine' => [
-                'Clinical Studies' => $medicine->id,
-                'Research Papers' => $medicine->id,
-                'Case Studies' => $medicine->id,
-                'Medical Imaging' => $medicine->id,
+            [
+                'name' => 'Researcher Two',
+                'email' => 'researcher2@dcms.test',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Student User',
+                'email' => 'student@dcms.test',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]
         ];
 
-        $collectionModels = [];
-        foreach ($collections as $faculty => $facultyCollections) {
-            foreach ($facultyCollections as $name => $communityId) {
-                $collectionModels[$name] = Collection::create([
-                    'name' => $name,
-                    'description' => "Collection for {$name}",
-                    'community_id' => $communityId
-                ]);
-            }
+        foreach ($users as $user) {
+            User::create($user);
         }
 
-        // Sample items data with ALL file types
-        $itemsData = [
-            // Engineering Items - PDF & Word
-            [
-                'title' => 'Renewable Energy Solutions for Urban Areas',
-                'description' => 'Comprehensive study of renewable energy integration in modern urban environments.',
-                'file_type' => 'PDF',
-                'collection_id' => $collectionModels['Masters Theses']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(50, 200),
-                'view_count' => rand(100, 500),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Renewable Energy Solutions for Urban Areas'],
-                    'dc_creator' => ['John Smith', 'Dr. Sarah Chen'],
-                    'dc_subject' => ['Renewable Energy', 'Urban Planning', 'Sustainability'],
-                    'dc_description' => ['Comprehensive study of renewable energy integration'],
-                    'dc_date_issued' => ['2024-06-15'],
-                    'dc_type' => ['Thesis'],
-                    'dc_publisher' => ['University Engineering Department'],
-                    'dc_format' => ['PDF'],
-                    'dc_identifier' => ['ETD-2024-001']
-                ],
-                'created_at' => now()->subMonths(2),
-            ],
-            [
-                'title' => 'Machine Learning in Structural Engineering',
-                'description' => 'AI and ML techniques for structural analysis and design optimization.',
-                'file_type' => 'PDF',
-                'collection_id' => $collectionModels['Research Papers']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(80, 300),
-                'view_count' => rand(150, 600),
-                'user_id' => $researcher2->id,
-                'metadata' => [
-                    'dc_title' => ['Machine Learning in Structural Engineering'],
-                    'dc_creator' => ['Dr. Michael Brown', 'Emily Johnson'],
-                    'dc_subject' => ['Machine Learning', 'Structural Engineering', 'AI'],
-                    'dc_description' => ['AI and ML techniques for structural analysis'],
-                    'dc_date_issued' => ['2024-05-20'],
-                    'dc_type' => ['Research Paper'],
-                    'dc_publisher' => ['Engineering Research Center'],
-                    'dc_format' => ['PDF'],
-                    'dc_identifier' => ['RP-2024-002']
-                ],
-                'created_at' => now()->subMonths(3),
-            ],
+        $adminUser = User::where('email', 'admin@dcms.test')->first();
+        $managerUser = User::where('email', 'manager@dcms.test')->first();
+        $researcher1 = User::where('email', 'researcher1@dcms.test')->first();
+        $researcher2 = User::where('email', 'researcher2@dcms.test')->first();
 
-            // Science Items - Images & Videos
+        // CREATE COMMUNITIES
+        $communities = [
             [
-                'title' => 'Microscopic Analysis of Cellular Structures',
-                'description' => 'High-resolution microscopic images showing detailed cellular structures and organelles in biological samples.',
-                'file_type' => 'Image',
-                'collection_id' => $collectionModels['Scientific Images']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(40, 150),
-                'view_count' => rand(200, 600),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Microscopic Analysis of Cellular Structures'],
-                    'dc_creator' => ['Dr. Lisa Wang', 'Biology Imaging Team'],
-                    'dc_subject' => ['Microscopy', 'Cellular Biology', 'Image Analysis', 'Scientific Imaging'],
-                    'dc_description' => ['High-resolution microscopic images showing detailed cellular structures'],
-                    'dc_date_issued' => ['2024-03-22'],
-                    'dc_type' => ['Research Images'],
-                    'dc_publisher' => ['Biology Research Center'],
-                    'dc_format' => ['JPG'],
-                    'dc_identifier' => ['IMG-2024-003']
-                ],
-                'created_at' => now()->subMonths(5),
+                'name' => 'Digital Humanities Research Group',
+                'description' => 'A community for researchers working on digital humanities projects and computational approaches to cultural heritage.',
+                // 'user_id' => $adminUser->id,
+                'created_at' => now()->subMonths(8),
+                'updated_at' => now()->subMonths(1),
             ],
             [
-                'title' => 'Laboratory Techniques: Advanced PCR Methods',
-                'description' => 'Instructional video demonstrating advanced PCR techniques and best practices in molecular biology laboratory.',
-                'file_type' => 'Video',
-                'collection_id' => $collectionModels['Research Videos']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(60, 180),
-                'view_count' => rand(300, 800),
-                'user_id' => $researcher2->id,
-                'metadata' => [
-                    'dc_title' => ['Laboratory Techniques: Advanced PCR Methods'],
-                    'dc_creator' => ['Dr. James Wilson', 'Molecular Biology Department'],
-                    'dc_subject' => ['PCR', 'Molecular Biology', 'Laboratory Techniques', 'Video Tutorial'],
-                    'dc_description' => ['Instructional video demonstrating advanced PCR techniques'],
-                    'dc_date_issued' => ['2024-01-15'],
-                    'dc_type' => ['Training Video'],
-                    'dc_publisher' => ['Science Faculty'],
-                    'dc_format' => ['MP4'],
-                    'dc_identifier' => ['VID-2024-004']
-                ],
-                'created_at' => now()->subMonths(7),
-            ],
-            [
-                'title' => 'Climate Change Data Analysis 2020-2024',
-                'description' => 'Comprehensive dataset of climate change indicators and environmental measurements.',
-                'file_type' => 'Dataset',
-                'collection_id' => $collectionModels['Research Datasets']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(100, 400),
-                'view_count' => rand(200, 800),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Climate Change Data Analysis 2020-2024'],
-                    'dc_creator' => ['Climate Research Team'],
-                    'dc_subject' => ['Climate Change', 'Environmental Data', 'Dataset'],
-                    'dc_description' => ['Comprehensive dataset of climate change indicators'],
-                    'dc_date_issued' => ['2024-02-18'],
-                    'dc_type' => ['Dataset'],
-                    'dc_publisher' => ['Environmental Research Institute'],
-                    'dc_format' => ['CSV'],
-                    'dc_identifier' => ['DATA-2024-005']
-                ],
+                'name' => 'Data Science Collaborators',
+                'description' => 'Community for data scientists, statisticians, and researchers sharing datasets and analytical methods.',
+                // 'user_id' => $managerUser->id,
                 'created_at' => now()->subMonths(6),
-            ],
-
-            // Arts & Humanities - Images & Documents
-            [
-                'title' => 'Modernist Poetry in Digital Literature',
-                'description' => 'Analysis of modernist poetry adaptations in contemporary digital media.',
-                'file_type' => 'Word Document',
-                'collection_id' => $collectionModels['Literary Works']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(30, 120),
-                'view_count' => rand(80, 200),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Modernist Poetry in Digital Literature'],
-                    'dc_creator' => ['Dr. Elizabeth Wong'],
-                    'dc_subject' => ['Modernist Poetry', 'Digital Humanities', 'Literary Analysis'],
-                    'dc_description' => ['Analysis of modernist poetry adaptations'],
-                    'dc_date_issued' => ['2024-08-05'],
-                    'dc_type' => ['Literary Analysis'],
-                    'dc_publisher' => ['Literature Department'],
-                    'dc_format' => ['DOCX'],
-                    'dc_identifier' => ['LIT-2024-006']
-                ],
-                'created_at' => now()->subMonths(1),
+                'updated_at' => now()->subWeeks(2),
             ],
             [
-                'title' => 'Contemporary Art Exhibition Catalog 2024',
-                'description' => 'Digital catalog featuring high-quality images from the annual contemporary art exhibition.',
-                'file_type' => 'Image',
-                'collection_id' => $collectionModels['Artwork Images']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(25, 100),
-                'view_count' => rand(150, 400),
-                'user_id' => $researcher2->id,
-                'metadata' => [
-                    'dc_title' => ['Contemporary Art Exhibition Catalog 2024'],
-                    'dc_creator' => ['Arts Department', 'Visual Arts Faculty'],
-                    'dc_subject' => ['Contemporary Art', 'Exhibition', 'Art Catalog', 'Visual Arts'],
-                    'dc_description' => ['Digital catalog featuring high-quality images from art exhibition'],
-                    'dc_date_issued' => ['2024-07-20'],
-                    'dc_type' => ['Art Catalog'],
-                    'dc_publisher' => ['University Art Gallery'],
-                    'dc_format' => ['JPG'],
-                    'dc_identifier' => ['ART-2024-007']
-                ],
-                'created_at' => now()->subMonths(2),
-            ],
-
-            // Medicine - Images & Datasets
-            [
-                'title' => 'Clinical Trial: Cardiovascular Treatments',
-                'description' => 'Dataset from clinical trials investigating cardiovascular treatments.',
-                'file_type' => 'Dataset',
-                'collection_id' => $collectionModels['Clinical Studies']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(70, 280),
-                'view_count' => rand(140, 350),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Clinical Trial: Cardiovascular Treatments'],
-                    'dc_creator' => ['Cardiology Research Team'],
-                    'dc_subject' => ['Clinical Trials', 'Cardiovascular', 'Medical Data'],
-                    'dc_description' => ['Dataset from clinical trials'],
-                    'dc_date_issued' => ['2024-09-12'],
-                    'dc_type' => ['Clinical Data'],
-                    'dc_publisher' => ['Medical Research Center'],
-                    'dc_format' => ['XLSX'],
-                    'dc_identifier' => ['CLIN-2024-008']
-                ],
-                'created_at' => now()->subDays(30),
-            ],
-            [
-                'title' => 'MRI Brain Scan Analysis',
-                'description' => 'Collection of MRI brain scans with detailed annotations for neurological research.',
-                'file_type' => 'Image',
-                'collection_id' => $collectionModels['Medical Imaging']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(45, 160),
-                'view_count' => rand(180, 500),
-                'user_id' => $researcher2->id,
-                'metadata' => [
-                    'dc_title' => ['MRI Brain Scan Analysis'],
-                    'dc_creator' => ['Neurology Department', 'Medical Imaging Team'],
-                    'dc_subject' => ['MRI', 'Brain Scan', 'Neurology', 'Medical Imaging'],
-                    'dc_description' => ['Collection of MRI brain scans with detailed annotations'],
-                    'dc_date_issued' => ['2024-04-10'],
-                    'dc_type' => ['Medical Images'],
-                    'dc_publisher' => ['Medical School'],
-                    'dc_format' => ['DICOM'],
-                    'dc_identifier' => ['MED-2024-009']
-                ],
+                'name' => 'Open Science Initiative',
+                'description' => 'Promoting open access, open data, and reproducible research practices across disciplines.',
+                // 'user_id' => $researcher1->id,
                 'created_at' => now()->subMonths(4),
+                'updated_at' => now()->subWeek(),
             ],
             [
-                'title' => 'Surgical Procedure Demonstration Video',
-                'description' => 'Step-by-step video demonstration of advanced laparoscopic surgical techniques.',
-                'file_type' => 'Video',
-                'collection_id' => $collectionModels['Clinical Studies']->id,
-                'workflow_state' => 'published',
-                'download_count' => rand(55, 220),
-                'view_count' => rand(250, 700),
-                'user_id' => $researcher1->id,
-                'metadata' => [
-                    'dc_title' => ['Surgical Procedure Demonstration Video'],
-                    'dc_creator' => ['Dr. Robert Kim', 'Surgical Training Department'],
-                    'dc_subject' => ['Surgery', 'Medical Training', 'Laparoscopic', 'Video Demonstration'],
-                    'dc_description' => ['Step-by-step video demonstration of surgical techniques'],
-                    'dc_date_issued' => ['2024-05-05'],
-                    'dc_type' => ['Training Video'],
-                    'dc_publisher' => ['Medical Training Center'],
-                    'dc_format' => ['MP4'],
-                    'dc_identifier' => ['SURG-2024-010']
-                ],
+                'name' => 'Historical Preservation Network',
+                'description' => 'Community dedicated to preserving and digitizing historical documents and cultural artifacts.',
+                // 'user_id' => $researcher2->id,
                 'created_at' => now()->subMonths(3),
-            ],
-
-            // Draft & Pending Items
-            [
-                'title' => 'Sustainable Urban Development Framework - Draft',
-                'description' => 'Proposed framework for sustainable urban development initiatives.',
-                'file_type' => 'Word Document',
-                'collection_id' => $collectionModels['Research Papers']->id,
-                'workflow_state' => 'draft',
-                'download_count' => 0,
-                'view_count' => rand(1, 5),
-                'user_id' => $user->id,
-                'metadata' => [
-                    'dc_title' => ['Sustainable Urban Development Framework'],
-                    'dc_creator' => ['Urban Planning Research Group'],
-                    'dc_subject' => ['Urban Development', 'Sustainability', 'Framework'],
-                    'dc_description' => ['Proposed framework for sustainable urban development'],
-                    'dc_date_issued' => ['2024-10-10'],
-                    'dc_type' => ['Research Paper'],
-                    'dc_publisher' => ['Urban Planning Department'],
-                    'dc_format' => ['DOCX'],
-                    'dc_identifier' => ['RP-2024-011']
-                ],
-                'created_at' => now()->subDays(3),
-            ],
-            [
-                'title' => 'Digital Art Installation Documentation - Under Review',
-                'description' => 'Documentation and images of interactive digital art installation.',
-                'file_type' => 'Image',
-                'collection_id' => $collectionModels['Artwork Images']->id,
-                'workflow_state' => 'pending_review',
-                'download_count' => rand(2, 10),
-                'view_count' => rand(10, 30),
-                'user_id' => $researcher2->id,
-                'metadata' => [
-                    'dc_title' => ['Digital Art Installation Documentation'],
-                    'dc_creator' => ['Digital Arts Collective'],
-                    'dc_subject' => ['Digital Art', 'Interactive Installation', 'Contemporary Art'],
-                    'dc_description' => ['Documentation and images of interactive digital art installation'],
-                    'dc_date_issued' => ['2024-10-08'],
-                    'dc_type' => ['Art Documentation'],
-                    'dc_publisher' => ['Arts Faculty'],
-                    'dc_format' => ['JPG'],
-                    'dc_identifier' => ['ART-2024-012']
-                ],
-                'created_at' => now()->subDays(5),
-            ],
+                'updated_at' => now()->subDays(3),
+            ]
         ];
 
-        foreach ($itemsData as $itemData) {
-            Item::create(array_merge($itemData, [
-                'last_downloaded_at' => $itemData['download_count'] > 0 ? now()->subDays(rand(1, 30)) : null,
-                'last_viewed_at' => now()->subDays(rand(1, 7)),
-                'updated_at' => $itemData['created_at'],
-            ]));
+        foreach ($communities as $community) {
+            Community::create($community);
         }
 
-        $this->command->info('🎉 Demo data seeded successfully!');
-        $this->command->info('👥 Users: ' . User::count());
-        $this->command->info('🏛️ Communities: ' . Community::count());
-        $this->command->info('📁 Collections: ' . Collection::count());
-        $this->command->info('📄 Items: ' . Item::count());
-        $this->command->info('📊 File Types:');
-        $this->command->info('   📄 PDF: ' . Item::where('file_type', 'PDF')->count());
-        $this->command->info('   📝 Word: ' . Item::where('file_type', 'Word Document')->count());
-        $this->command->info('   🖼️ Images: ' . Item::where('file_type', 'Image')->count());
-        $this->command->info('   🎥 Videos: ' . Item::where('file_type', 'Video')->count());
-        $this->command->info('   📊 Datasets: ' . Item::where('file_type', 'Dataset')->count());
-        $this->command->info('⬇️ Total Downloads: ' . Item::sum('download_count'));
-        $this->command->info('👀 Total Views: ' . Item::sum('view_count'));
+        $digitalHumanities = Community::where('name', 'Digital Humanities Research Group')->first();
+        $dataScience = Community::where('name', 'Data Science Collaborators')->first();
+        $openScience = Community::where('name', 'Open Science Initiative')->first();
+        $historicalPreservation = Community::where('name', 'Historical Preservation Network')->first();
+
+        // Create Collections (updated to include community_id if you have that relationship)
+        $collections = [
+            [
+                'name' => 'Academic Research Papers',
+                'description' => 'Collection of peer-reviewed academic papers and research findings',
+                // 'user_id' => $adminUser->id,
+                'community_id' => $digitalHumanities->id,
+                'created_at' => now()->subMonths(6),
+                'updated_at' => now()->subMonths(1),
+            ],
+            [
+                'name' => 'Historical Archives',
+                'description' => 'Digital preservation of historical documents and archives',
+                'community_id' => $historicalPreservation->id,
+                'created_at' => now()->subMonths(4),
+                'updated_at' => now()->subWeeks(2),
+            ],
+            [
+                'name' => 'Scientific Data Sets',
+                'description' => 'Research data sets and scientific measurements',
+                'community_id' => $dataScience->id,
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now()->subWeek(),
+            ],
+            [
+                'name' => 'Multimedia Resources',
+                'description' => 'Educational videos, images, and audio resources',
+                'community_id' => $digitalHumanities->id,
+                'created_at' => now()->subMonths(2),
+                'updated_at' => now()->subDays(3),
+            ],
+            [
+                'name' => 'Conference Proceedings',
+                'description' => 'Papers and presentations from academic conferences',
+                'community_id' => $openScience->id,
+                'created_at' => now()->subMonth(),
+                'updated_at' => now()->subDays(1),
+            ]
+        ];
+
+        foreach ($collections as $collection) {
+            Collection::create($collection);
+        }
+
+        // Rest of your items seeding remains the same...
+        $researchCollection = Collection::where('name', 'Academic Research Papers')->first();
+        $historicalCollection = Collection::where('name', 'Historical Archives')->first();
+        $scienceCollection = Collection::where('name', 'Scientific Data Sets')->first();
+        $multimediaCollection = Collection::where('name', 'Multimedia Resources')->first();
+        $conferenceCollection = Collection::where('name', 'Conference Proceedings')->first();
+
+        // Your existing items array here (same as before)...
+        $items = [
+            // Academic Research Papers - High download/views
+            [
+                'title' => 'Machine Learning Applications in Healthcare',
+                'slug' => 'machine-learning-healthcare',
+                'description' => 'Comprehensive study on ML applications in medical diagnosis and treatment planning',
+                'content' => 'This research paper explores various machine learning algorithms...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Machine Learning Applications in Healthcare'],
+                    'dc_creator' => ['Dr. Sarah Chen', 'Prof. Michael Rodriguez'],
+                    'dc_subject' => ['Machine Learning', 'Healthcare', 'AI', 'Medical Diagnosis'],
+                    'dc_description' => ['Comprehensive study on ML applications in medical diagnosis'],
+                    'dc_publisher' => ['University Research Press'],
+                    'dc_date_issued' => ['2024-01-15'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['DOI:10.1234/ml-health-2024']
+                ]),
+                'file_path' => 'research/ml_healthcare.pdf',
+                'file_name' => 'machine_learning_healthcare_research.pdf',
+                'file_size' => '2.5 MB',
+                'file_type' => 'PDF',
+                'user_id' => $researcher1->id,
+                'collection_id' => $researchCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $adminUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 245,
+                'view_count' => 567,
+                'published_at' => now()->subMonths(3),
+                'approved_at' => now()->subMonths(3),
+                'last_downloaded_at' => now()->subDays(2),
+                'last_viewed_at' => now()->subDay(),
+                'created_at' => now()->subMonths(4),
+                'updated_at' => now()->subDays(2),
+            ],
+            [
+                'title' => 'Climate Change Impact on Coastal Ecosystems',
+                'slug' => 'climate-change-coastal-ecosystems',
+                'description' => 'Long-term study of climate change effects on marine biodiversity',
+                'content' => 'This paper presents a 10-year longitudinal study...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Climate Change Impact on Coastal Ecosystems'],
+                    'dc_creator' => ['Dr. Emily Watson', 'Dr. James Kim'],
+                    'dc_subject' => ['Climate Change', 'Marine Biology', 'Ecosystem', 'Biodiversity'],
+                    'dc_description' => ['Long-term study of climate change effects on marine biodiversity'],
+                    'dc_publisher' => ['Environmental Research Journal'],
+                    'dc_date_issued' => ['2024-02-20'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['DOI:10.1234/climate-coastal-2024']
+                ]),
+                'file_path' => 'research/climate_coastal.pdf',
+                'file_name' => 'climate_change_coastal_study.pdf',
+                'file_size' => '3.1 MB',
+                'file_type' => 'PDF',
+                'user_id' => $researcher2->id,
+                'collection_id' => $researchCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $managerUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 189,
+                'view_count' => 432,
+                'published_at' => now()->subMonths(2),
+                'approved_at' => now()->subMonths(2),
+                'last_downloaded_at' => now()->subDays(5),
+                'last_viewed_at' => now()->subDays(1),
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now()->subDays(5),
+            ],
+
+            // Historical Archives - Medium traffic
+            [
+                'title' => '19th Century Trade Documents Collection',
+                'slug' => '19th-century-trade-documents',
+                'description' => 'Digitized collection of trade agreements and commercial documents from 1800s',
+                'content' => 'This collection contains scanned documents from various trade organizations...',
+                'metadata' => json_encode([
+                    'dc_title' => ['19th Century Trade Documents Collection'],
+                    'dc_creator' => ['Historical Archives Department'],
+                    'dc_subject' => ['History', 'Trade', 'Commerce', '19th Century', 'Documents'],
+                    'dc_description' => ['Digitized collection of trade agreements and commercial documents'],
+                    'dc_publisher' => ['National Archives'],
+                    'dc_date_issued' => ['2024-01-10'],
+                    'dc_type' => ['Archival Collection'],
+                    'dc_format' => ['ZIP'],
+                    'dc_identifier' => ['ARCH-2024-TRADE-001']
+                ]),
+                'file_path' => 'archives/trade_documents.zip',
+                'file_name' => '19th_century_trade_collection.zip',
+                'file_size' => '45.2 MB',
+                'file_type' => 'ZIP',
+                'user_id' => $managerUser->id,
+                'collection_id' => $historicalCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $adminUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 87,
+                'view_count' => 234,
+                'published_at' => now()->subMonths(4),
+                'approved_at' => now()->subMonths(4),
+                'last_downloaded_at' => now()->subWeek(),
+                'last_viewed_at' => now()->subDays(2),
+                'created_at' => now()->subMonths(5),
+                'updated_at' => now()->subWeek(),
+            ],
+
+            // Scientific Data Sets - Various file types
+            [
+                'title' => 'Genomic Sequencing Data - Human Genome Project',
+                'slug' => 'genomic-sequencing-data',
+                'description' => 'Raw genomic sequencing data from human genome research',
+                'content' => 'This dataset contains complete genomic sequencing information...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Genomic Sequencing Data - Human Genome Project'],
+                    'dc_creator' => ['Genomics Research Team'],
+                    'dc_subject' => ['Genomics', 'DNA', 'Sequencing', 'Bioinformatics', 'Research Data'],
+                    'dc_description' => ['Raw genomic sequencing data from human genome research'],
+                    'dc_publisher' => ['Genomics Data Repository'],
+                    'dc_date_issued' => ['2024-03-05'],
+                    'dc_type' => ['Dataset'],
+                    'dc_format' => ['CSV'],
+                    'dc_identifier' => ['GDR-2024-GENOME-001']
+                ]),
+                'file_path' => 'datasets/genomic_data.csv',
+                'file_name' => 'human_genome_sequencing.csv',
+                'file_size' => '156.8 MB',
+                'file_type' => 'CSV',
+                'user_id' => $researcher1->id,
+                'collection_id' => $scienceCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $managerUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 134,
+                'view_count' => 298,
+                'published_at' => now()->subMonths(2),
+                'approved_at' => now()->subMonths(2),
+                'last_downloaded_at' => now()->subDays(3),
+                'last_viewed_at' => now()->subDay(),
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now()->subDays(3),
+            ],
+            [
+                'title' => 'Astronomical Observation Data - Exoplanet Research',
+                'slug' => 'astronomical-observation-exoplanet',
+                'description' => 'Telescope observation data for exoplanet detection and analysis',
+                'content' => 'This dataset contains photometric and spectroscopic data...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Astronomical Observation Data - Exoplanet Research'],
+                    'dc_creator' => ['Space Observatory Team'],
+                    'dc_subject' => ['Astronomy', 'Exoplanets', 'Telescope', 'Observation', 'Space'],
+                    'dc_description' => ['Telescope observation data for exoplanet detection and analysis'],
+                    'dc_publisher' => ['Space Research Institute'],
+                    'dc_date_issued' => ['2024-02-28'],
+                    'dc_type' => ['Dataset'],
+                    'dc_format' => ['FITS'],
+                    'dc_identifier' => ['SRI-2024-EXOPLANET-001']
+                ]),
+                'file_path' => 'datasets/exoplanet_observations.fits',
+                'file_name' => 'exoplanet_research_data.fits',
+                'file_size' => '89.3 MB',
+                'file_type' => 'FITS',
+                'user_id' => $researcher2->id,
+                'collection_id' => $scienceCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $adminUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 76,
+                'view_count' => 187,
+                'published_at' => now()->subMonths(1),
+                'approved_at' => now()->subMonths(1),
+                'last_downloaded_at' => now()->subDays(7),
+                'last_viewed_at' => now()->subDays(2),
+                'created_at' => now()->subMonths(2),
+                'updated_at' => now()->subDays(7),
+            ],
+
+            // Multimedia Resources - Different file types
+            [
+                'title' => 'Educational Video: Introduction to Quantum Computing',
+                'slug' => 'quantum-computing-video',
+                'description' => 'Comprehensive video tutorial explaining quantum computing fundamentals',
+                'content' => 'This video covers quantum bits, superposition, entanglement...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Educational Video: Introduction to Quantum Computing'],
+                    'dc_creator' => ['Dr. Alex Thompson'],
+                    'dc_subject' => ['Quantum Computing', 'Physics', 'Education', 'Video', 'Tutorial'],
+                    'dc_description' => ['Comprehensive video tutorial explaining quantum computing fundamentals'],
+                    'dc_publisher' => ['Science Education Channel'],
+                    'dc_date_issued' => ['2024-03-15'],
+                    'dc_type' => ['Video'],
+                    'dc_format' => ['MP4'],
+                    'dc_identifier' => ['SEC-2024-QUANTUM-VIDEO']
+                ]),
+                'file_path' => 'multimedia/quantum_computing.mp4',
+                'file_name' => 'quantum_computing_introduction.mp4',
+                'file_size' => '245.7 MB',
+                'file_type' => 'MP4',
+                'user_id' => $managerUser->id,
+                'collection_id' => $multimediaCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $adminUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 156,
+                'view_count' => 423,
+                'published_at' => now()->subMonth(),
+                'approved_at' => now()->subMonth(),
+                'last_downloaded_at' => now()->subDays(1),
+                'last_viewed_at' => now()->subHours(6),
+                'created_at' => now()->subMonths(2),
+                'updated_at' => now()->subDays(1),
+            ],
+            [
+                'title' => 'High-Resolution Microscopy Images - Cell Biology',
+                'slug' => 'microscopy-images-cell-biology',
+                'description' => 'Collection of high-resolution microscopy images for cell biology research',
+                'content' => 'This collection includes various cell structures and organelles...',
+                'metadata' => json_encode([
+                    'dc_title' => ['High-Resolution Microscopy Images - Cell Biology'],
+                    'dc_creator' => ['Cell Biology Research Group'],
+                    'dc_subject' => ['Microscopy', 'Cell Biology', 'Images', 'Research', 'Science'],
+                    'dc_description' => ['Collection of high-resolution microscopy images for cell biology research'],
+                    'dc_publisher' => ['Biological Imaging Center'],
+                    'dc_date_issued' => ['2024-02-10'],
+                    'dc_type' => ['Image Collection'],
+                    'dc_format' => ['TIFF'],
+                    'dc_identifier' => ['BIC-2024-CELL-IMAGES']
+                ]),
+                'file_path' => 'multimedia/microscopy_images.zip',
+                'file_name' => 'cell_biology_microscopy.zip',
+                'file_size' => '367.2 MB',
+                'file_type' => 'ZIP',
+                'user_id' => $researcher1->id,
+                'collection_id' => $multimediaCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $managerUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 92,
+                'view_count' => 256,
+                'published_at' => now()->subMonths(2),
+                'approved_at' => now()->subMonths(2),
+                'last_downloaded_at' => now()->subDays(4),
+                'last_viewed_at' => now()->subDays(1),
+                'created_at' => now()->subMonths(3),
+                'updated_at' => now()->subDays(4),
+            ],
+
+            // Conference Proceedings - Mixed content
+            [
+                'title' => 'International AI Conference 2024 - Proceedings',
+                'slug' => 'ai-conference-2024-proceedings',
+                'description' => 'Complete proceedings from the International AI Conference 2024',
+                'content' => 'This document contains all papers, presentations, and discussions...',
+                'metadata' => json_encode([
+                    'dc_title' => ['International AI Conference 2024 - Proceedings'],
+                    'dc_creator' => ['AI Conference Committee'],
+                    'dc_subject' => ['Artificial Intelligence', 'Conference', 'Proceedings', 'Research', 'Technology'],
+                    'dc_description' => ['Complete proceedings from the International AI Conference 2024'],
+                    'dc_publisher' => ['AI Research Foundation'],
+                    'dc_date_issued' => ['2024-03-20'],
+                    'dc_type' => ['Conference Proceedings'],
+                    'dc_format' => ['PDF'],
+                    'dc_identifier' => ['AIC-2024-PROCEEDINGS']
+                ]),
+                'file_path' => 'conference/ai_2024_proceedings.pdf',
+                'file_name' => 'ai_conference_2024_proceedings.pdf',
+                'file_size' => '15.8 MB',
+                'file_type' => 'PDF',
+                'user_id' => $researcher2->id,
+                'collection_id' => $conferenceCollection->id,
+                'is_published' => true,
+                'is_approved' => true,
+                'approved_by' => $adminUser->id,
+                'workflow_state' => 'published',
+                'download_count' => 203,
+                'view_count' => 478,
+                'published_at' => now()->subWeeks(2),
+                'approved_at' => now()->subWeeks(2),
+                'last_downloaded_at' => now()->subDays(1),
+                'last_viewed_at' => now()->subHours(3),
+                'created_at' => now()->subMonth(),
+                'updated_at' => now()->subDays(1),
+            ],
+
+            // Add some items with different workflow states for testing
+            [
+                'title' => 'Blockchain Technology in Supply Chain Management - DRAFT',
+                'slug' => 'blockchain-supply-chain-draft',
+                'description' => 'Research on blockchain applications in supply chain optimization (Work in Progress)',
+                'content' => 'This paper explores how blockchain technology can enhance supply chain transparency...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Blockchain Technology in Supply Chain Management'],
+                    'dc_creator' => ['Dr. Robert Chen'],
+                    'dc_subject' => ['Blockchain', 'Supply Chain', 'Technology', 'Logistics'],
+                    'dc_description' => ['Research on blockchain applications in supply chain optimization'],
+                    'dc_publisher' => ['Technology Research Institute'],
+                    'dc_date_issued' => ['2024-03-25'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_format' => ['PDF']
+                ]),
+                'file_path' => 'research/blockchain_supply_chain.pdf',
+                'file_name' => 'blockchain_supply_chain_draft.pdf',
+                'file_size' => '1.8 MB',
+                'file_type' => 'PDF',
+                'user_id' => $researcher1->id,
+                'collection_id' => $researchCollection->id,
+                'is_published' => false,
+                'is_approved' => false,
+                'workflow_state' => 'draft',
+                'download_count' => 0,
+                'view_count' => 12,
+                'created_at' => now()->subWeek(),
+                'updated_at' => now()->subDays(2),
+            ],
+            [
+                'title' => 'Renewable Energy Storage Solutions - UNDER REVIEW',
+                'slug' => 'renewable-energy-storage-review',
+                'description' => 'Analysis of advanced energy storage technologies for renewable systems',
+                'content' => 'This research evaluates various energy storage methods...',
+                'metadata' => json_encode([
+                    'dc_title' => ['Renewable Energy Storage Solutions'],
+                    'dc_creator' => ['Dr. Maria Gonzalez'],
+                    'dc_subject' => ['Renewable Energy', 'Energy Storage', 'Sustainability', 'Technology'],
+                    'dc_description' => ['Analysis of advanced energy storage technologies for renewable systems'],
+                    'dc_publisher' => ['Energy Research Journal'],
+                    'dc_date_issued' => ['2024-03-18'],
+                    'dc_type' => ['Research Paper'],
+                    'dc_format' => ['PDF']
+                ]),
+                'file_path' => 'research/energy_storage.pdf',
+                'file_name' => 'renewable_energy_storage.pdf',
+                'file_size' => '2.2 MB',
+                'file_type' => 'PDF',
+                'user_id' => $researcher2->id,
+                'collection_id' => $researchCollection->id,
+                'is_published' => false,
+                'is_approved' => false,
+                'workflow_state' => 'pending_review',
+                'download_count' => 0,
+                'view_count' => 8,
+                'submitted_at' => now()->subDays(5),
+                'created_at' => now()->subWeeks(2),
+                'updated_at' => now()->subDays(5),
+            ]
+        ];
+
+        foreach ($items as $item) {
+            Item::create($item);
+        }
+
+        $this->command->info('Demo data seeded successfully!');
+        $this->command->info('Total Users: ' . User::count());
+        $this->command->info('Total Communities: ' . Community::count());
+        $this->command->info('Total Collections: ' . Collection::count());
+        $this->command->info('Total Items: ' . Item::count());
+        $this->command->info('Total Downloads: ' . Item::sum('download_count'));
+        $this->command->info('Total Views: ' . Item::sum('view_count'));
     }
 }
+

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\ItemVersion;
 use App\Models\Category;
+use App\Models\User;
 use App\Models\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,7 +17,9 @@ class ItemController extends Controller
     public function index(Request $request)
     {
         $query = Item::with(['collection.community', 'categories']);
-        
+
+        $role = Auth::user()->role;
+        // dd($request);
         // Search
         if ($request->has('search') && $request->search) {
             $query->where(function($q) use ($request) {
@@ -37,16 +41,25 @@ class ItemController extends Controller
         }
         
         // Filter by status
-        if ($request->has('status') && $request->status) {
-            $isPublished = $request->status === 'published';
-            $query->where('is_published', $isPublished);
+        if ($request->has('workflow_state') && $request->workflow_state) {
+            $isPublished = $request->workflow_state;
+            $query->where('workflow_state', $isPublished);
+        }
+
+        if($request->status == 'pending_review'){
+            $query->whereIn('workflow_state', ['draft', 'pending_review']);
+        }elseif ($request->status == 'draft') {
+            $query->where('workflow_state', 'draft');
         }
         
         // Order by latest first
+        if($role == "user"){
+            $query->where('user_id', Auth::id());
+        }
         $query->orderBy('created_at', 'desc');
         
         $items = $query->paginate(12);
-        
+        // dd($items);
         $categories = Category::all();
         $collections = Collection::with('community')->get();
         
@@ -120,52 +133,22 @@ class ItemController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'collection_id' => 'required|exists:collections,id',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-            'is_published' => 'boolean',
-            'file' => 'required|file|max:10240',
-        ]);
-
+        // $request->validate([
+        //     'title' => 'required|string|max:255',
+        //     'description' => 'nullable|string',
+        //     'collection_id' => 'required|exists:collections,id',
+        //     'categories' => 'nullable|array',
+        //     'categories.*' => 'exists:categories,id',
+        //     'is_published' => 'boolean',
+        //     'file' => 'required|file|max:10240',
+        // ]);
+        // dd($request);
         \Log::info('=== ALTERNATIVE UPLOAD METHOD ===');
-
-        if (!$request->hasFile('file')) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'No file was uploaded.');
-        }
 
         $file = $request->file('file');
 
         try {
-            $originalName = $file->getClientOriginalName();
-            $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
-            $fileName = time() . '_' . $safeName;
-            $filePath = 'items/' . $fileName;
-
-            // METHOD 1: Use file_get_contents() and Storage::put()
-            $fileContent = file_get_contents($file->getPathname());
             
-            if ($fileContent === false) {
-                throw new \Exception('Could not read file content');
-            }
-
-            // Store using Laravel Storage
-            \Storage::disk('public')->put($filePath, $fileContent);
-            
-            \Log::info('File stored via content method: ' . $filePath);
-
-            // Verify the file was stored
-            if (!\Storage::disk('public')->exists($filePath)) {
-                throw new \Exception('File storage failed');
-            }
-
-            // Get file info from stored file
-            $storedFileSize = \Storage::disk('public')->size($filePath);
-            $storedMimeType = \Storage::disk('public')->mimeType($filePath);
 
              $metadata = [
                 'dc_title' => [$request->title],
@@ -179,23 +162,85 @@ class ItemController extends Controller
                 'dc_identifier' => $request->dc_identifier ? [$request->dc_identifier] : [],
             ];
 
-
-            // Create item
-            $item = Item::create([
+            $addData = [
                 'title' => $request->title,
                 'description' => $request->description,
                 'collection_id' => $request->collection_id,
                 'is_published' => $request->boolean('is_published', false),
-                // 'metadata' => $metadata,
+                'metadata' => $metadata,
                 'user_id' => auth()->id(),
-                'file_path' => $filePath,
-                'file_name' => $originalName,
-                'file_size' => $storedFileSize,
-                'file_type' => $storedMimeType ?: $file->getClientMimeType(),
-            ]);
+                // 'file_path' => $filePath,
+                // 'file_name' => $originalName,
+                // 'file_size' => $storedFileSize,
+                // 'file_type' => $storedMimeType ?: $file->getClientMimeType(),
+            ];
 
-            $item->metadata = $metadata;
-            $item->save();
+            if ($request->hasFile('file') && $request->file('file')->isValid()) {
+                $file = $request->file('file');
+                $originalName = $file->getClientOriginalName();
+                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+                $fileName = time() . '_' . $safeName;
+                $filePath = 'items/' . $fileName;
+
+                // Use the approach that worked in your store method
+                $fileContent = file_get_contents($file->getPathname());
+                
+                if ($fileContent === false) {
+                    throw new \Exception('Could not read file content');
+                }
+
+                // Store using Laravel Storage
+                \Storage::disk('public')->put($filePath, $fileContent);
+                
+                \Log::info('New file stored via content method: ' . $filePath);
+
+                // Verify the file was stored
+                if (!\Storage::disk('public')->exists($filePath)) {
+                    throw new \Exception('File storage failed during update');
+                }
+
+                // Get file info from stored file
+                $storedFileSize = \Storage::disk('public')->size($filePath);
+                $storedMimeType = \Storage::disk('public')->mimeType($filePath);
+
+                $file = $request->file('file');
+                $originalExtension = strtolower($file->getClientOriginalExtension());
+
+                $extensionMap = [
+                    'xlsx' => 'Dataset',
+                    'xls' => 'Dataset', 
+                    'csv' => 'Dataset',
+                    'pdf' => 'PDF',
+                    'doc' => 'Word Document',
+                    'docx' => 'Word Document',
+                    'jpg' => 'Image',
+                    'jpeg' => 'Image',
+                    'png' => 'Image',
+                    'gif' => 'Image',
+                    'mp4' => 'Video',
+                    'avi' => 'Video',
+                ];
+                // dd($extensionMap);
+                $fileType = $extensionMap[$originalExtension] ?? 'Other';
+                // Add file data to update
+                $addData['file_path'] = $filePath;
+                $addData['file_name'] = $originalName;
+                $addData['file_size'] = $storedFileSize;
+                $addData['file_type'] = $fileType;
+                // 
+                // Delete old file
+                // $this->deleteOldFile($item->file_path);
+            }
+            // dd($addData);
+            // Create item
+            $item = Item::create($addData);
+            // dd($item);
+            if($item){
+                dd('1');
+            }else{
+                dd('babi');
+            }
+            // $item->save();
 
             if ($request->has('categories')) {
                 $item->categories()->sync($request->categories);
@@ -232,19 +277,20 @@ class ItemController extends Controller
     public function update(Request $request, Item $item)
     {
 
-        // $request->validate([
-        //     'title' => 'required|string|max:255',
-        //     'description' => 'nullable|string',
-        //     'collection_id' => 'required|exists:collections,id',
-        //     'categories' => 'nullable|array',
-        //     'categories.*' => 'exists:categories,id',
-        //     'is_published' => 'boolean',
-        //     'file' => 'nullable|file|max:10240',
-        //     'changes' => 'nullable|string|max:500', // What changed in this update
-        // ]);
-        // dd($item);
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'collection_id' => 'required|exists:collections,id',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:categories,id',
+            'is_published' => 'boolean',
+            'file' => 'nullable|file|max:10240',
+            // 'changes' => 'nullable|string|max:500', 
+            // What changed in this update
+        ]);
+        // dd($request);
         try {
-            $item->createVersion($request->changes);
+            // $item->createVersion($request->changes);
             // Build metadata
             
             // ... your metadata building code ...
@@ -327,9 +373,9 @@ class ItemController extends Controller
                 // Delete old file
                 $this->deleteOldFile($item->file_path);
             }
-
+            // dd($updateData);
             // Update the item
-            $item = Item::where('id', $item->id) // Make sure you have the fresh instance
+            Item::where('id', $item->id) // Make sure you have the fresh instance
                     ->update($updateData);
             
             // Handle categories
@@ -348,6 +394,30 @@ class ItemController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to update item: ' . $e->getMessage());
+        }
+    }
+
+    public function status(Request $request, Item $item)
+    {
+        $updateStatus =[
+            'workflow_state' => $request->workflow_state
+        ];
+
+        if($request->workflow_state == 'published'){
+            $updateStatus['is_published'] = true;
+        }elseif($request->workflow_state == 'draft'){
+            $updateStatus['is_published'] = false;
+        }
+        // dd($updateStatus);
+        $up = Item::where('id', $item->id) // Make sure you have the fresh instance
+                    ->update($updateStatus);
+
+        if($up){
+            return redirect()->route('items.show', $item->id)
+                ->with('success', 'Status updated successfully.');
+        }else{
+            return redirect()->route('items.show', $item->id)
+                ->with('error', 'Status not updated successfully.');
         }
     }
 

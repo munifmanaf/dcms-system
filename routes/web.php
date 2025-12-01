@@ -41,7 +41,7 @@ Route::group(['middleware' => ['web']], function () {
     Route::get('/repository/statistics', [RepositoryController::class, 'statistics'])->name('repository.statistics');
     Route::get('/repository/communities/{id}', [RepositoryController::class, 'showCommunity'])->name('repository.community');
     Route::get('/repository/collections/{id}', [RepositoryController::class, 'showCollection'])->name('repository.collection');
-    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('repository.item');
+    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('items.show');
 });
 
 // Admin repository management (keep your existing auth)
@@ -98,7 +98,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bitstreams/{bitstream}/download', [ItemController::class, 'downloadBitstream'])->name('bitstreams.download');
     Route::delete('/bitstreams/{bitstream}', [ItemController::class, 'deleteBitstream'])->name('bitstreams.destroy');
 
-    Route::patch('items/{item}/status', [ItemController::class, 'updateStatus'])->name('items.update-status');
+    Route::put('items/{item}/status', [ItemController::class, 'status'])->name('items.status');
     Route::patch('items/{item}/approve', [ItemController::class, 'approve'])->name('items.approve');
     Route::patch('items/{item}/archive', [ItemController::class, 'archive'])->name('items.archive');
     Route::patch('items/{item}/unarchive', [ItemController::class, 'unarchive'])->name('items.unarchive');
@@ -160,7 +160,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/repository/statistics', [RepositoryController::class, 'statistics'])->name('repository.statistics');
     Route::get('/repository/communities/{id}', [RepositoryController::class, 'showCommunity'])->name('repository.community');
     Route::get('/repository/collections/{id}', [RepositoryController::class, 'showCollection'])->name('repository.collection');
-    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('repository.item');
+    Route::get('/repository/items/{id}', [RepositoryController::class, 'showItem'])->name('items.show');
 
     // Admin routes
     Route::get('/admin/repository/settings', [RepositoryController::class, 'settings'])->name('admin.repository.settings');
@@ -168,13 +168,59 @@ Route::middleware('auth')->group(function () {
 
 
     // routes/web.php
-    Route::prefix('batch')->group(function () {
-        Route::get('/', [BatchController::class, 'index'])->name('batch.index');
-        Route::post('/export', [BatchController::class, 'exportItems'])->name('batch.export');
-        Route::post('/import', [BatchController::class, 'importItems'])->name('batch.import');
-        Route::post('/status-update', [BatchController::class, 'bulkStatusUpdate'])->name('batch.status-update');
+    // Batch Operations Routes
+    // Batch Operations Routes
+    Route::prefix('batch')->name('batch.')->group(function () {
+        // Dashboard
+        Route::get('/', [BatchController::class, 'index'])->name('index');
+        
+        // Export routes
+        Route::get('/export', [BatchController::class, 'exportForm'])->name('export.form');
+        Route::post('/export', [BatchController::class, 'export'])->name('export.process');
+        
+        // Import routes  
+        Route::get('/import', [BatchController::class, 'importForm'])->name('import.form');
+        Route::post('/import', [BatchController::class, 'import'])->name('import.process');
+        
+        // Bulk update routes
+        Route::get('/bulk-update', [BatchController::class, 'bulkUpdateForm'])->name('bulk-update.form');
+        Route::post('/bulk-update', [BatchController::class, 'bulkUpdate'])->name('bulk-update.process');
+        
+        // AJAX routes
+        Route::get('/get-items', [BatchController::class, 'getItems'])->name('get-items');
+        
+        // 🔥 QUICK ACTION ROUTES - ADD THESE
+        Route::post('/quick-publish/{collectionId}', [BatchController::class, 'quickPublishCollection'])->name('quick.publish');
+        Route::post('/quick-unpublish/{collectionId}', [BatchController::class, 'quickUnpublishCollection'])->name('quick.unpublish');
+        Route::post('/quick-approve', [BatchController::class, 'quickApproveAll'])->name('quick.approve');
+        Route::post('/quick-stats', [BatchController::class, 'quickStatsUpdate'])->name('quick.stats');
     });
 
+    Route::get('/debug-import', function(Request $request) {
+        return view('debug-import');
+    });
+
+    Route::post('/debug-import', function(Request $request) {
+        dd([
+            'has_file' => $request->hasFile('file'),
+            'file_object' => $request->file('file'),
+            'file_name' => $request->file('file') ? $request->file('file')->getClientOriginalName() : 'no file',
+            'file_size' => $request->file('file') ? $request->file('file')->getSize() : 0,
+            'file_path' => $request->file('file') ? $request->file('file')->getPathname() : 'no path',
+            'all_request_data' => $request->all(),
+            'files_data' => $request->allFiles(),
+        ]);
+    });
+
+    Route::get('/php-info', function() {
+        return response()->json([
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+            'max_file_uploads' => ini_get('max_file_uploads'),
+            'memory_limit' => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time'),
+        ]);
+    });
 
     // System Management Routes - ADMIN ONLY
     // Enhanced system routes

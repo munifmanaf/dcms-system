@@ -22,7 +22,7 @@
                             <div class="card card-default">
                                 <div class="card-body">
                                     <h5 class="card-title">
-                                        <a href="{{ route('repository.item', $item->id) }}">
+                                        <a href="{{ route('items.show', $item->id) }}">
                                             {{ $item->title }}
                                         </a>
                                     </h5>

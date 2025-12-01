@@ -1,29 +1,77 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - DCMS</title>
-    
+    <title>Log Masuk - Sistem Koleksi Digital</title>
+
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- AdminLTE -->
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
+    <!-- Custom styles -->
+    <style>
+        .login-logo {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .login-logo i {
+            color: #1a472a;
+            font-size: 3rem;
+        }
+        .login-logo h2 {
+            color: #1a472a;
+            font-family: 'Amiri', serif;
+            font-weight: bold;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .login-logo p {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        .login-card-body {
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #1a472a 0%, #2c5530 100%);
+            border: none;
+            color: white;
+        }
+        .btn-login:hover {
+            background: linear-gradient(135deg, #2c5530 0%, #1a472a 100%);
+            color: white;
+        }
+    </style>
 </head>
 <body class="hold-transition login-page">
 <div class="login-box">
     <div class="login-logo">
-        <a href="{{ url('/') }}">
-            <i class="fas fa-file-alt"></i>
-            <b>DCMS</b>
-        </a>
+        <i class="fas fa-mosque"></i>
+        <h2>Sistem Koleksi Digital</h2>
+        <p>Jabatan Mufti Brunei</p>
     </div>
+    
+    <!-- Session Status -->
+    @if (session('status'))
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            {{ session('status') }}
+        </div>
+    @endif
 
-    <div class="card">
+    <!-- /.login-logo -->
+    <div class="card login-card-body">
         <div class="card-body login-card-body">
-            <p class="login-box-msg">Sign in to start your session</p>
+            <p class="login-box-msg">Log masuk untuk mengakses sistem</p>
 
             <form method="POST" action="{{ route('login') }}">
                 @csrf
@@ -42,10 +90,10 @@
                         </span>
                     @enderror
                 </div>
-
+                
                 <div class="input-group mb-3">
                     <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" 
-                           placeholder="Password" required>
+                           placeholder="Kata Laluan" required autocomplete="current-password">
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-lock"></span>
@@ -57,40 +105,40 @@
                         </span>
                     @enderror
                 </div>
-
+                
                 <div class="row">
                     <div class="col-8">
                         <div class="icheck-primary">
-                            <input type="checkbox" name="remember" id="remember">
-                            <label for="remember">Remember Me</label>
+                            <input type="checkbox" id="remember" name="remember">
+                            <label for="remember">
+                                Ingat Saya
+                            </label>
                         </div>
                     </div>
+                    <!-- /.col -->
                     <div class="col-4">
-                        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                        <button type="submit" class="btn btn-login btn-block">Log Masuk</button>
                     </div>
+                    <!-- /.col -->
                 </div>
             </form>
 
             @if (Route::has('password.request'))
-            <p class="mb-1">
-                <a href="{{ route('password.request') }}">I forgot my password</a>
-            </p>
-            @endif
-
-            @if (Route::has('register'))
-            <p class="mb-0">
-                <a href="{{ route('register') }}" class="text-center">Register a new membership</a>
-            </p>
+                <p class="mb-1 mt-3">
+                    <a href="{{ route('password.request') }}">Lupa kata laluan?</a>
+                </p>
             @endif
         </div>
+        <!-- /.login-card-body -->
     </div>
 </div>
+<!-- /.login-box -->
 
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
 <!-- Bootstrap 4 -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <!-- AdminLTE App -->
-<script src="{{ asset('vendor/adminlte/dist/js/adminlte.min.js') }}"></script>
+<script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
 </body>
 </html>

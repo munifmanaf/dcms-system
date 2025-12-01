@@ -278,7 +278,7 @@
                         <a href="{{ route('items.edit', $item->id) }}" class="btn btn-primary">
                             <i class="fas fa-edit"></i> Edit Item
                         </a>
-                        <a href="{{ route('repository.item', $item->id) }}" class="btn btn-info" target="_blank">
+                        <a href="{{ route('items.show', $item->id) }}" class="btn btn-info" target="_blank">
                             <i class="fas fa-eye"></i> View Public Page
                         </a>
                         <a href="{{ route('items.index') }}" class="btn btn-default">
@@ -297,28 +297,54 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        @if(Auth::user()->hasAnyRole(['user']))
                         @if($item->workflow_state == 'draft')
-                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
                             @csrf @method('PUT')
                             <input type="hidden" name="workflow_state" value="pending_review">
                             <button type="submit" class="btn btn-warning btn-block">
                                 <i class="fas fa-paper-plane"></i> Submit for Review
                             </button>
                         </form>
+                        @elseif ($item->workflow_state == 'pending_review')
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            {{-- <input type="hidden" name="workflow_state" value="pending_review"> --}}
+                            <button type="button" class="btn btn-warning btn-block">
+                                <i class="fas fa-clock"></i> Waiting for Review
+                            </button>
+                        </form>
+                        @elseif ($item->workflow_state == 'published')
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            {{-- <input type="hidden" name="workflow_state" value="pending_review"> --}}
+                            <button type="button" class="btn btn-success btn-block">
+                                <i class="fas fa-paper-check"></i> Published
+                            </button>
+                        </form>
                         @endif
-                        
+                        @endif
+                        @if(Auth::user()->hasAnyRole(['admin', 'manager']))
                         @if($item->workflow_state == 'pending_review')
-                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
                             @csrf @method('PUT')
                             <input type="hidden" name="workflow_state" value="published">
                             <button type="submit" class="btn btn-success btn-block">
                                 <i class="fas fa-check"></i> Publish Item
                             </button>
                         </form>
+                        <br>
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="workflow_state" value="draft">
+                            <button type="submit" class="btn btn-danger btn-block">
+                                <i class="fas fa-x"></i> Draft
+                            </button>
+                        </form>
                         @endif
                         
                         @if($item->workflow_state == 'published')
-                        <form action="{{ route('items.update', $item->id) }}" method="POST">
+                        <form action="{{ route('items.status', $item->id) }}" method="POST">
                             @csrf @method('PUT')
                             <input type="hidden" name="workflow_state" value="draft">
                             <input type="hidden" name="item_id" value="{{$item->id}}">
@@ -326,6 +352,7 @@
                                 <i class="fas fa-undo"></i> Unpublish
                             </button>
                         </form>
+                        @endif
                         @endif
                     </div>
                 </div>

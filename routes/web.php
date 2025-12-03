@@ -12,6 +12,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WorkflowController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\OaiHarvestController;
+use App\Http\Controllers\LocIslamicController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -220,6 +222,36 @@ Route::middleware('auth')->group(function () {
             'memory_limit' => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time'),
         ]);
+    });
+
+    // routes/web.php
+    Route::middleware(['auth'])->prefix('oai-harvest')->name('oai.harvest.')->group(function () {
+        Route::get('/', [OaiHarvestController::class, 'index'])->name('index');
+        Route::get('/history', [OaiHarvestController::class, 'history'])->name('history');
+        Route::get('/harvest/{id}', [OaiHarvestController::class, 'showHarvest'])->name('show');
+        Route::get('/resume/{id}', [OaiHarvestController::class, 'resume'])->name('resume');
+        
+        Route::post('/test-connection', [OaiHarvestController::class, 'testConnection'])->name('test-connection');
+        Route::post('/get-sets', [OaiHarvestController::class, 'getSets'])->name('get-sets');
+        Route::post('/preview', [OaiHarvestController::class, 'preview'])->name('preview');
+        Route::post('/harvest', [OaiHarvestController::class, 'harvest'])->name('harvest');
+        Route::get('/search', [OaiHarvestController::class, 'search'])->name('search');
+        Route::post('/search', [OaiHarvestController::class, 'performSearch'])->name('search-perform');
+        Route::post('/select-records', [OaiHarvestController::class, 'selectRecords'])->name('select-records');
+        Route::post('/harvest-selected', [OaiHarvestController::class, 'harvestSelected'])->name('harvest-selected');
+    });
+
+    // routes/web.php
+    Route::middleware(['auth'])->prefix('loc')->name('loc.')->group(function () {
+        Route::get('/islamic', [LocIslamicController::class, 'index'])->name('islamic.index');
+        Route::post('/islamic/test-connection', [LocIslamicController::class, 'testConnection'])->name('islamic.test-connection');
+        Route::post('/islamic/search', [LocIslamicController::class, 'search'])->name('islamic.search');
+        Route::get('/islamic/preview/{collection?}', [LocIslamicController::class, 'preview'])->name('islamic.preview');
+        Route::post('/islamic/import', [LocIslamicController::class, 'import'])->name('islamic.import');
+        Route::post('/islamic/sets', [LocIslamicController::class, 'getSets'])->name('islamic.sets');
+        Route::post('/islamic/preview-selected', [LocIslamicController::class, 'previewSelected'])->name('islamic.preview-selected');
+        Route::get('/harvest/{id}', [LocIslamicController::class, 'show'])->name('harvest.show');
+        Route::get('/islamic/quick/{type}', [LocIslamicController::class, 'quickSearch'])->name('loc.islamic.quick-search');
     });
 
     // System Management Routes - ADMIN ONLY

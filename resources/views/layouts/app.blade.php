@@ -276,6 +276,8 @@
                                 </span>
                             </a>
                         </li>
+
+                        
                         
                         <!-- Pending Review (for reviewers, managers, admins) -->
                         @if(Auth::user()->hasAnyRole(['reviewer', 'manager', 'admin']))
@@ -314,6 +316,50 @@
                                 <i class="nav-icon fas fa-plus"></i>
                                 <p>Add Item</p>
                             </a>
+                        </li>
+
+                        <li class="nav-header">RESOURCES</li>
+
+                        <li class="nav-item {{ request()->is('oai-harvest*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->is('oai-harvest*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-cloud-download-alt"></i>
+                                <p>
+                                    OAI-PMH Harvester
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('loc.islamic.index') }}" 
+                                    class="nav-link {{ request()->is('loc/islamic*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon text-success"></i>
+                                        <p>Islamic Collections</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('oai.harvest.search') }}" 
+                                    class="nav-link {{ request()->is('oai-harvest/search*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Search & Select</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('oai.harvest.index') }}" 
+                                    class="nav-link {{ request()->is('oai-harvest') || request()->is('oai-harvest/index') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Bulk Harvest</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('oai.harvest.history') }}" 
+                                    class="nav-link {{ request()->is('oai-harvest/history') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Harvest History</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
 
                         <!-- 🔄 BATCH OPERATIONS -->

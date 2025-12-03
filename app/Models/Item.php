@@ -27,7 +27,10 @@ class Item extends Model
         'file_size',
         'file_type',
         'slug',
-        'workflow_state'
+        'workflow_state',
+        'oai_identifier', 'oai_datestamp', 'harvest_log_id', 'import_date',
+        'source', 'accession_number', 'external_identifier', 'author',
+        'publisher', 'item_type'
     ];
 
     protected $casts = [
@@ -37,6 +40,7 @@ class Item extends Model
         'is_archived' => 'boolean',
         'is_featured' => 'boolean',
         'approved_at' => 'datetime',
+        'external_identifier' => 'array'
     ];
 
     // Add this boot method if not already there
@@ -389,6 +393,138 @@ class Item extends Model
     public function getHasVersionsAttribute()
     {
         return method_exists($this, 'versions') && $this->versions()->exists();
+    }
+
+    public function harvestLog()
+    {
+        return $this->belongsTo(OaiHarvestLog::class, 'harvest_log_id');
+    }
+
+    public function scopeOaiItems($query)
+    {
+        return $query->where('source', 'oai-pmh');
+    }
+
+    // Scope for manual items
+    public function scopeManualItems($query)
+    {
+        return $query->where('source', 'manual');
+    }
+
+    // Get specific metadata value
+    public function getMetadataValue($key, $default = null)
+    {
+        $metadata = $this->metadata;
+        
+        // Check direct key
+        if (isset($metadata[$key])) {
+            $value = $metadata[$key];
+            return is_array($value) && !empty($value) ? $value[0] : $value;
+        }
+        
+        // Check Dublin Core format
+        $dcKey = 'dc_' . $key;
+        if (isset($metadata[$dcKey])) {
+            $value = $metadata[$dcKey];
+            return is_array($value) && !empty($value) ? $value[0] : $value;
+        }
+        
+        return $default;
+    }
+
+    // Get all metadata values for a key
+    public function getMetadataArray($key)
+    {
+        $metadata = $this->metadata;
+        $value = $this->getMetadataValue($key, []);
+        
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        return $value ? [$value] : [];
+    }
+
+    // In app/Models/Item.php
+    // Add these methods to handle your metadata format
+
+    /**
+     * Get DC metadata value
+     */
+    public function getDcValue($field, $default = null)
+    {
+        $metadata = $this->metadata;
+        $dcField = 'dc_' . $field;
+        
+        if (isset($metadata[$dcField]) && !empty($metadata[$dcField])) {
+            if (is_array($metadata[$dcField])) {
+                return count($metadata[$dcField]) === 1 ? $metadata[$dcField][0] : $metadata[$dcField];
+            }
+            return $metadata[$dcField];
+        }
+        
+        return $default;
+    }
+
+    /**
+     * Get DC metadata as array
+     */
+    public function getDcArray($field)
+    {
+        $value = $this->getDcValue($field, []);
+        
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        return $value ? [$value] : [];
+    }
+
+    /**
+     * Set DC metadata value
+     */
+    public function setDcValue($field, $value)
+    {
+        $metadata = $this->metadata;
+        $dcField = 'dc_' . $field;
+        
+        if (is_array($value)) {
+            $metadata[$dcField] = $value;
+        } else {
+            $metadata[$dcField] = [$value];
+        }
+        
+        $this->metadata = $metadata;
+        return $this;
+    }
+
+    /**
+     * Add value to DC array metadata
+     */
+    public function addDcValue($field, $value)
+    {
+        $metadata = $this->metadata;
+        $dcField = 'dc_' . $field;
+        
+        if (!isset($metadata[$dcField])) {
+            $metadata[$dcField] = [];
+        }
+        
+        if (!is_array($metadata[$dcField])) {
+            $metadata[$dcField] = [$metadata[$dcField]];
+        }
+        
+        if (is_array($value)) {
+            $metadata[$dcField] = array_merge($metadata[$dcField], $value);
+        } else {
+            $metadata[$dcField][] = $value;
+        }
+        
+        // Remove duplicates
+        $metadata[$dcField] = array_unique($metadata[$dcField]);
+        
+        $this->metadata = $metadata;
+        return $this;
     }
 
 }

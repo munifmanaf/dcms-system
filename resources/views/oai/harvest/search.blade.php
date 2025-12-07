@@ -102,7 +102,16 @@
                                 </div>
                             </div>
                         </div>
-
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="publisher">Publisher</label>
+                                    <input type="text" name="publisher" id="publisher" 
+                                           class="form-control" 
+                                           value="{{ old('publisher') }}">
+                                </div>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -111,6 +120,7 @@
                                         <option value="">Any Language</option>
                                         <option value="arabic">Arabic</option>
                                         <option value="english">English</option>
+                                        <option value="malay">Malay</option>
                                     </select>
                                 </div>
                             </div>

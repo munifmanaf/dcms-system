@@ -623,6 +623,7 @@ private function mergeMetadata($existing, $new)
                 'until' => $request->until_date,
                 'keyword' => $request->keyword,
                 'language' => $request->language,
+                'publisher' => $request->publisher,
                 'maxResults' => $request->max_results ?? 50,
             ];
 
@@ -644,6 +645,8 @@ private function mergeMetadata($existing, $new)
                 'total' => $result['total'],
                 'hasMore' => $result['hasMore'],
                 'keyword' => $request->keyword,
+                'language' => $request->language,
+                'publisher' => $request->publisher,
                 'endpoint' => $request->endpoint,
             ]);
 

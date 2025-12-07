@@ -14,28 +14,7 @@
                             {{ ucfirst($item->workflow_state) }}
                         </span>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Metadata Information</h5>
-                        </div>
-                        <div class="card-body">
-                            @if($item->source === 'oai-pmh')
-                                <div class="alert alert-info">
-                                    <i class="fas fa-cloud-download-alt"></i>
-                                    This item was imported via OAI-PMH on {{ $item->import_date->format('Y-m-d H:i') }}
-                                </div>
-                            @endif
-                            
-                            <x-oai-metadata :item="$item" />
-                            
-                            @if($item->harvestLog)
-                                <div class="mt-3">
-                                    <strong>Harvest Source:</strong> {{ $item->harvestLog->endpoint }}<br>
-                                    <strong>Imported:</strong> {{ $item->harvestLog->created_at->format('Y-m-d H:i') }}
-                                </div>
-                            @endif
-                        </div>
-                    </div>
+                    
                 </div>
                 <div class="card-body">
                     <!-- File Type and Basic Info -->
@@ -313,6 +292,29 @@
         
         <div class="col-md-4">
             <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Metadata Information</h5>
+                </div>
+                <div class="card-body">
+                    @if($item->source === 'oai-pmh')
+                        <div class="alert alert-info">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            This item was imported via OAI-PMH 
+                            on {{ \Carbon\Carbon::parse($item->import_date)->format('Y-m-d H:i') }}
+                        </div>
+                    @endif
+                    
+                    <x-oai-metadata :item="$item" />
+                    
+                    @if($item->harvestLog)
+                        <div class="mt-3">
+                            <strong>Harvest Source:</strong> {{ $item->harvestLog->endpoint }}<br>
+                            <strong>Imported:</strong> {{ \Carbon\Carbon::parse($item->harvestLog->created_at)->format('Y-m-d H:i') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title">Quick Actions</h5>

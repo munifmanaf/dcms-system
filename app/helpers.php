@@ -111,3 +111,19 @@ if (!function_exists('is_metadata_value_displayable')) {
         return !is_array($value) && !is_object($value) && $value !== null && $value !== '';
     }
 }
+
+// app/helpers.php (create if doesn't exist)
+if (!function_exists('formatBytes')) {
+    function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        
+        $bytes /= pow(1024, $pow);
+        
+        return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+}

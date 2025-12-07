@@ -286,6 +286,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['auth'])->group(function () {
     Route::resource('images', ImageController::class);
+    Route::get('images/{id}/serve/{size?}', [ImageController::class, 'serve'])->name('images.serve');
+    Route::get('images/{image}/download', [ImageController::class, 'download'])->name('images.download');
+    Route::post('images/batch-upload', [ImageController::class, 'batchUpload'])->name('images.batch.upload');
     Route::post('images/batch-process', [ImageController::class, 'batchProcess'])
          ->name('images.batch-process');
     });

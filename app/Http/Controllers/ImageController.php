@@ -1,37 +1,75 @@
 <?php
+// app/Http/Controllers/ImageController.php
 
 namespace App\Http\Controllers;
 
 use App\Models\Image;
-use App\Services\ImageProcessingService;
+use App\Services\SimpleImageProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ImageController extends Controller
 {
-    protected $imageService;
+    protected $imageProcessor;
     
-    public function __construct(ImageProcessingService $imageService)
+    public function __construct(SimpleImageProcessor $imageProcessor)
     {
-        $this->imageService = $imageService;
-        $this->middleware('auth')->except(['show', 'thumbnail']);
+        $this->imageProcessor = $imageProcessor;
+        $this->middleware('auth')->except(['index', 'show', 'publicGallery']);
     }
     
     /**
-     * Display a listing of images
+     * Display user's image gallery
      */
+    // In your index() method:
     public function index(Request $request)
     {
-        $images = Image::where('user_id', auth()->id())
+        $userId = auth()->id();
+        
+        // Get stats
+        $totalImages = Image::where('user_id', $userId)->count();
+        $publicImages = Image::where('user_id', $userId)->where('is_public', true)->count();
+        $totalSize = Image::where('user_id', $userId)->sum('size');
+        $categories = Image::where('user_id', $userId)
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->filter()
+            ->values();
+        
+        // Query images with filters
+        $query = Image::where('user_id', $userId)
+            ->with('item');
+        
+        // Apply filters...
+        
+        $images = $query->latest()->paginate($request->per_page ?? 24);
+        
+        return view('images.index', compact(
+            'images', 
+            'categories', 
+            'totalImages',
+            'publicImages',
+            'totalSize'
+        ));
+    }
+        
+    /**
+     * Show public gallery
+     */
+    public function publicGallery()
+    {
+        $images = Image::where('is_public', true)
+            ->with('user')
             ->latest()
-            ->paginate(20);
+            ->paginate(24);
             
-        return view('images.index', compact('images'));
+        return view('images.public', compact('images'));
     }
     
     /**
-     * Show the form for uploading images
+     * Show upload form
      */
     public function create()
     {
@@ -39,75 +77,89 @@ class ImageController extends Controller
     }
     
     /**
-     * Store a newly uploaded image
+     * Store uploaded image
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'add_watermark' => 'boolean',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        
         try {
-            $imageData = $this->imageService->processUploadedImage(
+            // Process the image
+            $result = $this->imageProcessor->uploadFile(
                 $request->file('image'),
-                auth()->id()
+                auth()->id(),
+                $request->item_id
             );
-            dd($imageData);
-            // Add watermark if requested
-            if ($request->boolean('add_watermark')) {
-                $this->imageService->addWatermark($imageData['paths']['original']);
-                $imageData['has_watermark'] = true;
+            
+            // Check if upload was successful
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error'] ?? 'Upload failed'
+                ], 500);
             }
             
-            // Extract metadata
-            $metadata = $this->imageService->extractExifData($imageData['paths']['original']);
-            
-            // Create image record
+            // Save to database
             $image = Image::create([
                 'user_id' => auth()->id(),
-                'original_name' => $imageData['original_name'],
-                'stored_name' => $imageData['stored_name'],
-                'paths' => $imageData['paths'],
-                'mime_type' => $imageData['mime_type'],
-                'size' => $imageData['size'],
-                'metadata' => $metadata,
-                'is_optimized' => true,
-                'has_watermark' => $request->boolean('add_watermark', false),
+                'item_id' => $request->item_id,
+                'original_name' => $result['original_name'],
+                'stored_name' => $result['stored_name'],
+                'path' => $result['path'],
+                'previews' => $result['previews'] ?? [],
+                'metadata' => $result['metadata'] ?? [],
+                'extension' => $result['extension'],
+                'size' => $result['size'],
+                'mime_type' => $result['mime_type'],
+                'width' => $result['metadata']['dimensions']['width'] ?? null,
+                'height' => $result['metadata']['dimensions']['height'] ?? null,
+                'category' => $request->category,
+                'description' => $request->description,
+                'tags' => $request->tags,
+                'is_public' => $request->boolean('is_public', false),
             ]);
             
             return response()->json([
                 'success' => true,
                 'message' => 'Image uploaded successfully',
-                'image' => $image,
-                'thumbnail_url' => $image->getThumbnailUrl(),
+                'image' => [
+                    'id' => $image->id,
+                    'name' => $image->original_name,
+                    'thumbnail_url' => $image->thumbnail_url,
+                    'preview_url' => $image->preview_url,
+                    'url' => $image->url,
+                    'size' => $image->formatted_size,
+                    'dimensions' => $image->dimensions,
+                    'path' => $image->path, // Debug info
+                ]
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Image upload failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to upload image: ' . $e->getMessage()
+                'message' => 'Upload failed: ' . $e->getMessage()
             ], 500);
         }
     }
     
     /**
-     * Display the specified image
+     * Display single image
      */
     public function show(Image $image)
     {
+        // Check permissions
+        if ($image->user_id !== auth()->id() && !$image->is_public) {
+            abort(403, 'This image is private');
+        }
+        
         return view('images.show', compact('image'));
     }
     
     /**
-     * Show the form for editing image details
+     * Show edit form
      */
     public function edit(Image $image)
     {
@@ -117,115 +169,166 @@ class ImageController extends Controller
     }
     
     /**
-     * Update image metadata
+     * Update image details
      */
     public function update(Request $request, Image $image)
     {
         $this->authorize('update', $image);
         
         $validated = $request->validate([
-            'alt_text' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
+            'category' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:500',
+            'tags' => 'nullable|string|max:255',
+            'is_public' => 'boolean',
         ]);
         
         $image->update($validated);
         
-        return redirect()->route('images.index')
+        return redirect()->route('images.show', $image)
             ->with('success', 'Image updated successfully');
     }
     
     /**
-     * Remove the specified image
+     * Delete image
      */
     public function destroy(Image $image)
     {
         $this->authorize('delete', $image);
         
-        // Delete all image files
-        foreach ($image->paths as $path) {
-            Storage::disk('public')->delete($path);
+        try {
+            // Delete all files
+            Storage::disk('public')->delete($image->path);
+            
+            // Delete previews
+            $previews = $image->previews ?? [];
+            foreach ($previews as $preview) {
+                if (isset($preview['path'])) {
+                    Storage::disk('public')->delete($preview['path']);
+                }
+            }
+            
+            $image->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete image'
+            ], 500);
         }
-        
-        $image->delete();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Image deleted successfully'
-        ]);
     }
     
     /**
-     * Batch image processing
+     * Batch upload for multiple images
      */
-    public function batchProcess(Request $request)
+    public function batchUpload(Request $request)
     {
-        $request->validate([
-            'image_ids' => 'required|array',
-            'action' => 'required|in:resize,watermark,optimize',
-            'width' => 'required_if:action,resize|integer|min:50|max:4000',
-            'height' => 'required_if:action,resize|integer|min:50|max:4000',
-            'watermark_text' => 'required_if:action,watermark|string|max:100',
+        $validator = Validator::make($request->all(), [
+            'images.*' => 'required|image|max:50000',
+            'category' => 'nullable|string|max:100',
         ]);
         
-        $images = Image::whereIn('id', $request->image_ids)
-            ->where('user_id', auth()->id())
-            ->get();
-            
-        $results = [];
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
         
-        foreach ($images as $image) {
-            switch ($request->action) {
-                case 'resize':
-                    $newPath = $this->imageService->resizeSingleImage(
-                        $image->getPath('original'),
-                        $request->width,
-                        $request->height,
-                        $request->boolean('keep_aspect_ratio', true)
-                    );
+        $uploaded = [];
+        $failed = [];
+        
+        foreach ($request->file('images') as $file) {
+            try {
+                $result = $this->imageProcessor->uploadFile(
+                    $file,
+                    auth()->id(),
+                    $request->item_id
+                );
+                
+                if ($result['success']) {
+                    $image = Image::create([
+                        'user_id' => auth()->id(),
+                        'item_id' => $request->item_id,
+                        'original_name' => $result['original_name'],
+                        'stored_name' => $result['stored_name'],
+                        'path' => $result['path'],
+                        'previews' => $result['previews'],
+                        'metadata' => $result['metadata'],
+                        'extension' => $result['extension'],
+                        'size' => $result['size'],
+                        'width' => $result['metadata']['dimensions']['width'] ?? null,
+                        'height' => $result['metadata']['dimensions']['height'] ?? null,
+                        'category' => $request->category,
+                        'is_public' => $request->boolean('is_public', false),
+                    ]);
                     
-                    // Update paths in database
-                    $paths = $image->paths;
-                    $paths['custom_resized'] = $newPath;
-                    $image->update(['paths' => $paths]);
-                    
-                    $results[$image->id] = [
-                        'success' => true,
-                        'new_path' => $newPath
-                    ];
-                    break;
-                    
-                case 'watermark':
-                    $this->imageService->addWatermark(
-                        $image->getPath('original'),
-                        $request->watermark_text
-                    );
-                    
-                    $image->update(['has_watermark' => true]);
-                    $results[$image->id] = ['success' => true];
-                    break;
+                    $uploaded[] = $image->original_name;
+                } else {
+                    $failed[] = $file->getClientOriginalName();
+                }
+                
+            } catch (\Exception $e) {
+                $failed[] = $file->getClientOriginalName();
             }
         }
         
-        return response()->json([
-            'success' => true,
-            'results' => $results
-        ]);
+        $message = '';
+        if (count($uploaded) > 0) {
+            $message .= 'Uploaded: ' . implode(', ', $uploaded) . '. ';
+        }
+        if (count($failed) > 0) {
+            $message .= 'Failed: ' . implode(', ', $failed);
+        }
+        
+        return redirect()->route('images.index')
+            ->with('success', $message ?: 'No images uploaded');
     }
     
     /**
-     * Get thumbnail image
+     * Serve image in specific size
      */
-    public function thumbnail($id)
+    public function serve($id, $size = 'original')
     {
         $image = Image::findOrFail($id);
         
-        // Check if thumbnail exists
-        $thumbnailPath = Storage::disk('public')->path($image->getPath('thumbnail'));
+        // Check permissions
+        if ($image->user_id !== auth()->id() && !$image->is_public) {
+            abort(403);
+        }
         
-        if (!file_exists($thumbnailPath)) {
+        $path = $image->path;
+        
+        if ($size !== 'original' && isset($image->previews[$size])) {
+            $path = $image->previews[$size]['path'];
+        }
+        
+        $fullPath = Storage::disk('public')->path($path);
+        
+        if (!file_exists($fullPath)) {
             abort(404);
         }
         
-        return response()->file($thumbnailPath);
+        return response()->file($fullPath);
+    }
+    
+    /**
+     * Download original image
+     */
+    public function download(Image $image)
+    {
+        // Check permissions
+        if ($image->user_id !== auth()->id() && !$image->is_public) {
+            abort(403);
+        }
+        
+        $path = Storage::disk('public')->path($image->path);
+        
+        if (!file_exists($path)) {
+            abort(404);
+        }
+        
+        return response()->download($path, $image->original_name);
     }
 }

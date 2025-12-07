@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Item extends Model
 {
@@ -525,6 +528,68 @@ class Item extends Model
         
         $this->metadata = $metadata;
         return $this;
+    }
+
+    public function thumbnail(): BelongsTo
+    {
+        return $this->belongsTo(Image::class, 'thumbnail_id');
+    }
+    
+    /**
+     * Get all images attached to this item
+     */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Image::class, 'imageable');
+    }
+    
+    /**
+     * Get galleries this item belongs to
+     */
+    public function galleries(): BelongsToMany
+    {
+        return $this->belongsToMany(Gallery::class, 'gallery_items')
+                    ->withTimestamps();
+    }
+    
+    /**
+     * Get thumbnail URL
+     */
+    public function getThumbnailUrlAttribute()
+    {
+        if ($this->thumbnail) {
+            return $this->thumbnail->getUrl('thumbnail');
+        }
+        
+        // Return default image if no thumbnail
+        return asset('images/default-thumbnail.jpg');
+    }
+    
+    /**
+     * Get medium image URL
+     */
+    public function getMediumImageUrlAttribute()
+    {
+        if ($this->thumbnail) {
+            return $this->thumbnail->getUrl('medium');
+        }
+        
+        return asset('images/default-medium.jpg');
+    }
+    
+    /**
+     * Get all image URLs for this item
+     */
+    public function getAllImageUrlsAttribute()
+    {
+        return $this->images->map(function($image) {
+            return [
+                'original' => $image->getUrl('original'),
+                'thumbnail' => $image->getUrl('thumbnail'),
+                'medium' => $image->getUrl('medium'),
+                'large' => $image->getUrl('large'),
+            ];
+        });
     }
 
 }

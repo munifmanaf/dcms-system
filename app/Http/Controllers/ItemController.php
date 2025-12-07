@@ -11,9 +11,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Image;
+use App\Services\ImageProcessingService;
 
 class ItemController extends Controller
 {
+    protected $imageService;
+    
+    public function __construct(ImageProcessingService $imageService)
+    {
+        $this->imageService = $imageService;
+        $this->middleware('auth')->except(['index', 'show']);
+    }
+
     public function index(Request $request)
     {
         $query = Item::with(['collection.community', 'categories']);
@@ -126,8 +136,12 @@ class ItemController extends Controller
         $userId = auth()->id();
         $collections = Collection::with('community')->get();
         $categories = Category::all();
+        $userImages = Image::where('user_id', auth()->id())
+                          ->whereNull('imageable_id')
+                          ->latest()
+                          ->get();
         // dd($userId);
-        return view('items.form', compact('collections', 'categories'));
+        return view('items.form', compact('collections', 'categories', 'userImages'));
     }
     
 

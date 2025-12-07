@@ -6,6 +6,7 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\RepositoryController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ImageController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\CategoryController;
@@ -33,6 +34,35 @@ use Illuminate\Support\Facades\Storage;
 // Public Routes
 Route::get('/', function () {
     return view('welcome');
+});
+
+// routes/web.php - Test route
+Route::get('/check-intervention', function() {
+    echo "<h3>Checking Intervention Image v3 Structure</h3>";
+    
+    // Check all possible Image classes
+    $classes = [
+        'Intervention\Image\ImageManager',
+        'Intervention\Image\Facades\Image',
+        'Intervention\Image\Laravel\Facades\Image',
+    ];
+    
+    foreach ($classes as $class) {
+        if (class_exists($class)) {
+            echo "✓ Class exists: {$class}<br>";
+        } else {
+            echo "✗ Class NOT found: {$class}<br>";
+        }
+    }
+    
+    // Check the actual namespace
+    echo "<br><strong>Available Image classes:</strong><br>";
+    $allClasses = get_declared_classes();
+    foreach ($allClasses as $class) {
+        if (strpos($class, 'Intervention\Image') !== false) {
+            echo $class . "<br>";
+        }
+    }
 });
 // routes/web.php
 
@@ -254,6 +284,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/islamic/quick/{type}', [LocIslamicController::class, 'quickSearch'])->name('loc.islamic.quick-search');
     });
 
+    Route::middleware(['auth'])->group(function () {
+    Route::resource('images', ImageController::class);
+    Route::post('images/batch-process', [ImageController::class, 'batchProcess'])
+         ->name('images.batch-process');
+    });
+
+    // Public route for thumbnails
+    Route::get('images/{id}/thumbnail', [ImageController::class, 'thumbnail'])
+        ->name('images.thumbnail');
     // System Management Routes - ADMIN ONLY
     // Enhanced system routes
     Route::prefix('system')->name('system.')->middleware('auth')->group(function () {
